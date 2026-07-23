@@ -3,23 +3,70 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #0e161f;
-  --color-surface: #161f29;
-  --color-surface-2: #1d2732;
-  --color-border: #2a3541;
-  --color-ink: #f3efe6;
-  --color-muted: #a6b0ba;
-  --color-faint: #6c7883;
-  --color-sage: #8fa888;
-  --color-sage-hover: #7c9573;
-  --color-sage-soft: rgba(143, 168, 136, 0.14);
-  --color-warn: #c98a72;
-  --color-warn-soft: rgba(201, 138, 114, 0.14);
+  --color-bg: #f7f3ee;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0eae2;
+  --color-border: #e8ddd4;
+  --color-ink: #2c1810;
+  --color-muted: #6b4f3a;
+  --color-faint: #9c7b65;
+
+  --color-accent: #c4846a;
+  --color-accent-hover: #b3735a;
+  --color-accent-text: #ffffff;
+  --color-accent-soft: rgba(196, 132, 106, 0.14);
+
+  --color-sage: #8fa68e;
+  --color-sage-hover: #7a9479;
+  --color-sage-soft: rgba(143, 166, 142, 0.14);
+
+  --color-crisis: #c4846a;
+
+  /* Deeper and redder than --color-accent so destructive actions and
+     errors read as distinct from primary buttons, while staying warm
+     rather than a clinical alarm red. */
+  --color-danger: #b54a35;
+  --color-danger-soft: rgba(181, 74, 53, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1410;
+    --color-surface: #2c1e18;
+    --color-surface-2: #3a2820;
+    --color-border: #4a3428;
+    --color-ink: #f7f3ee;
+    --color-muted: #d4b8a8;
+    --color-faint: #9c7b65;
+
+    --color-accent: #c4846a;
+    --color-accent-hover: #d4956b;
+    --color-accent-text: #ffffff;
+    --color-accent-soft: rgba(196, 132, 106, 0.18);
+
+    --color-sage: #8fa68e;
+    --color-sage-hover: #9ab89a;
+    --color-sage-soft: rgba(143, 166, 142, 0.18);
+
+    --color-crisis: #e8956a;
+
+    --color-danger: #e0674a;
+    --color-danger-soft: rgba(224, 103, 74, 0.16);
+  }
 }
 
 body {
   color: var(--color-ink);
   background: var(--color-bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: Georgia, "Times New Roman", serif;
+  }
 }
 
 @layer utilities {

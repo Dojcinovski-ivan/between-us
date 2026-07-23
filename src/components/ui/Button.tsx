@@ -6,12 +6,12 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-sage text-bg hover:bg-sage-hover disabled:bg-sage/50 disabled:text-bg/70",
+    "bg-accent text-accent-text hover:bg-accent-hover disabled:bg-accent/50 disabled:text-accent-text/70",
   secondary:
     "bg-surface2 text-ink border border-border hover:bg-surface2/70 disabled:opacity-50",
   ghost: "text-muted hover:text-ink disabled:opacity-50",
   danger:
-    "bg-warn text-bg hover:opacity-90 disabled:bg-warn/50 disabled:text-bg/70",
+    "bg-warn text-white hover:opacity-90 disabled:bg-warn/50 disabled:text-white/70",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

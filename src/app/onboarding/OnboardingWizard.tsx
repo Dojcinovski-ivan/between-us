@@ -2,133 +2,281 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { CATEGORIES, categoryLabel } from "@/lib/categories";
+import { CATEGORIES, type CategorySlug } from "@/lib/categories";
+import { JOURNEY_STAGES } from "@/lib/journeyStages";
+import { FEELINGS } from "@/lib/feelings";
+import { AGE_RANGES } from "@/lib/ageRanges";
+import { GENDERS } from "@/lib/genders";
+import { COUNTRIES } from "@/lib/countries";
+import { suggestAnonymousName } from "@/lib/anonymousNames";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { QuestionScreen } from "./QuestionScreen";
+import { OptionCard } from "./OptionCard";
 import { completeOnboarding } from "./actions";
 
-type Step = "category" | "profile";
-
 export function OnboardingWizard() {
-  const [step, setStep] = useState<Step>("category");
-  const [category, setCategory] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
+  const [step, setStep] = useState(0);
+  const [category, setCategory] = useState<CategorySlug | null>(null);
+  const [categoryOtherText, setCategoryOtherText] = useState("");
+  const [journeyStage, setJourneyStage] = useState<string | null>(null);
+  const [feeling, setFeeling] = useState<string | null>(null);
+  const [ageRange, setAgeRange] = useState<string | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
+  const [country, setCountry] = useState("");
+  const [username, setUsername] = useState(() => suggestAnonymousName());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!category) return;
+  function goBack() {
+    setError(null);
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  function selectAndAdvance<T>(setter: (v: T) => void, value: T) {
+    setter(value);
+    setStep((s) => s + 1);
+  }
+
+  function handleSubmit() {
+    if (!category || !journeyStage || !feeling || !ageRange || !gender || !country) return;
     setError(null);
     startTransition(async () => {
-      const result = await completeOnboarding({ username, category, bio });
+      const result = await completeOnboarding({
+        category,
+        categoryOtherText: category === "something_else" ? categoryOtherText : "",
+        journeyStage,
+        feeling,
+        ageRange,
+        gender,
+        country,
+        username,
+      });
       if (result?.error) {
         setError(result.error);
       }
     });
   }
 
-  if (step === "category") {
+  // Opening screen
+  if (step === 0) {
     return (
-      <Card>
-        <p className="text-xs font-medium uppercase tracking-wide text-faint">Step 1 of 2</p>
-        <h1 className="mt-2 text-xl font-semibold text-ink">What brings you here?</h1>
-        <p className="mt-1 text-sm text-muted">
-          This connects you with a circle of people navigating something similar. You can&apos;t change this later.
+      <Card className="text-center">
+        <h1 className="text-2xl font-semibold text-ink">You&apos;re in the right place.</h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted">
+          We want to make sure you find the right circle — people who truly
+          understand what you&apos;ve been through. We&apos;ll ask you a few
+          gentle questions. Take your time.
         </p>
-
-        <div className="mt-6 flex flex-col gap-3">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.slug}
-              type="button"
-              onClick={() => setCategory(c.slug)}
-              className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-                category === c.slug
-                  ? "border-sage bg-sage-soft"
-                  : "border-border bg-surface2 hover:bg-surface2/70"
-              }`}
-            >
-              <p className="font-medium text-ink">{c.label}</p>
-              <p className="mt-0.5 text-sm text-muted">{c.description}</p>
-            </button>
-          ))}
-        </div>
-
-        <Button
-          type="button"
-          disabled={!category}
-          onClick={() => setStep("profile")}
-          className="mt-6 w-full"
-        >
-          Continue
+        <Button onClick={() => setStep(1)} className="mt-6 w-full">
+          Let&apos;s begin →
         </Button>
       </Card>
     );
   }
 
-  return (
-    <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-faint">Step 2 of 2</p>
-      <h1 className="mt-2 text-xl font-semibold text-ink">Choose how you&apos;ll show up</h1>
-      <p className="mt-1 text-sm text-muted">
-        You&apos;re joining the <span className="text-ink">{categoryLabel(category!)}</span> circle. We
-        recommend not using your real name — this space stays anonymous.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
-        <Input
-          label="Username"
-          name="username"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="e.g. quiet_river"
-          hint="3-20 characters: letters, numbers, underscores."
-        />
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bio" className="text-sm font-medium text-muted">
-            A short note about yourself{" "}
-            <span className="text-faint">(optional)</span>
-          </label>
-          <textarea
-            id="bio"
-            name="bio"
-            rows={3}
-            maxLength={200}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Share as much or as little as you'd like."
-            className="resize-none rounded-xl border border-border bg-surface2 px-4 py-3 text-ink placeholder:text-faint focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
+  // Screen 1 — category
+  if (step === 1) {
+    return (
+      <QuestionScreen
+        step={1}
+        heading="What brought you here?"
+        subtext="Choose the one that feels closest to your experience."
+        warmNote="There are no wrong answers. This helps us find people who understand."
+        onBack={goBack}
+      >
+        {CATEGORIES.map((c) => (
+          <OptionCard
+            key={c.slug}
+            label={c.label}
+            selected={category === c.slug}
+            onClick={() => {
+              if (c.slug === "something_else") {
+                setCategory(c.slug);
+              } else {
+                selectAndAdvance(setCategory, c.slug);
+              }
+            }}
           />
-        </div>
+        ))}
 
-        {error && <p className="text-sm text-warn">{error}</p>}
+        {category === "something_else" && (
+          <div className="mt-1 flex flex-col gap-3">
+            <textarea
+              value={categoryOtherText}
+              onChange={(e) => setCategoryOtherText(e.target.value)}
+              rows={3}
+              autoFocus
+              placeholder="Tell us a little about what brought you here."
+              className="resize-none rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            <Button
+              onClick={() => setStep(2)}
+              disabled={!categoryOtherText.trim()}
+              className="w-full"
+            >
+              Continue
+            </Button>
+          </div>
+        )}
+      </QuestionScreen>
+    );
+  }
 
-        <div className="mt-2 flex flex-col-reverse gap-3 sm:flex-row">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setStep("category")}
-            className="sm:flex-1"
-          >
-            Back
-          </Button>
-          <Button type="submit" disabled={isPending} className="sm:flex-1">
-            {isPending ? "Joining…" : "Join your circle"}
-          </Button>
-        </div>
-      </form>
+  // Screen 2 — journey stage
+  if (step === 2) {
+    return (
+      <QuestionScreen
+        step={2}
+        heading="How long have you been carrying this?"
+        subtext="This helps us connect you with people at a similar point in their journey."
+        warmNote="Wherever you are is exactly where you need to be."
+        onBack={goBack}
+      >
+        {JOURNEY_STAGES.map((s) => (
+          <OptionCard
+            key={s.slug}
+            label={s.label}
+            selected={journeyStage === s.slug}
+            onClick={() => selectAndAdvance(setJourneyStage, s.slug)}
+          />
+        ))}
+      </QuestionScreen>
+    );
+  }
 
-      <p className="mt-4 text-center text-xs text-faint">
+  // Screen 3 — current feeling
+  if (step === 3) {
+    return (
+      <QuestionScreen
+        step={3}
+        heading="How are you feeling right now?"
+        subtext="Be honest — this is just between us."
+        warmNote="There's no right answer. We just want to understand where you are today."
+        onBack={goBack}
+      >
+        {FEELINGS.map((f) => (
+          <OptionCard
+            key={f.slug}
+            label={f.label}
+            selected={feeling === f.slug}
+            onClick={() => selectAndAdvance(setFeeling, f.slug)}
+          />
+        ))}
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 4 — age range
+  if (step === 4) {
+    return (
+      <QuestionScreen
+        step={4}
+        heading="How old are you?"
+        subtext="We use this to connect you with people at a similar stage of life."
+        warmNote="Your age is never shown to other members."
+        onBack={goBack}
+      >
+        {AGE_RANGES.map((a) => (
+          <OptionCard
+            key={a.slug}
+            label={a.label}
+            selected={ageRange === a.slug}
+            onClick={() => selectAndAdvance(setAgeRange, a.slug)}
+          />
+        ))}
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 5 — gender
+  if (step === 5) {
+    return (
+      <QuestionScreen
+        step={5}
+        heading="How do you identify?"
+        subtext="This is optional. Some people feel more comfortable in circles with others who share their identity."
+        warmNote="Whatever you choose, you'll find understanding here."
+        onBack={goBack}
+      >
+        {GENDERS.map((g) => (
+          <OptionCard
+            key={g.slug}
+            label={g.label}
+            selected={gender === g.slug}
+            onClick={() => selectAndAdvance(setGender, g.slug)}
+          />
+        ))}
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 6 — country
+  if (step === 6) {
+    return (
+      <QuestionScreen
+        step={6}
+        heading="Which country are you in?"
+        subtext="We use this to show you the right crisis resources if you ever need them."
+        warmNote="Your location is never shown to other members."
+        onBack={goBack}
+      >
+        <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+        >
+          <option value="" disabled>
+            Select your country
+          </option>
+          {COUNTRIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <Button onClick={() => setStep(7)} disabled={!country} className="w-full">
+          Continue
+        </Button>
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 7 — anonymous name
+  return (
+    <QuestionScreen
+      step={7}
+      heading="One last thing — choose your name here."
+      subtext="This is the only name anyone will ever see. Make it something you feel comfortable with."
+      warmNote="No real names. Ever. This is your safe space."
+      onBack={goBack}
+    >
+      <input
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+      />
+      <button
+        type="button"
+        onClick={() => setUsername(suggestAnonymousName())}
+        className="w-fit text-xs text-accent hover:text-accent-hover"
+      >
+        🔄 Suggest another name
+      </button>
+
+      {error && <p className="text-sm text-warn">{error}</p>}
+
+      <Button onClick={handleSubmit} disabled={isPending || !username.trim()} className="w-full">
+        {isPending ? "Joining…" : "Join your circle"}
+      </Button>
+
+      <p className="text-center text-xs text-faint">
         By joining, you agree to our{" "}
-        <Link href="/guidelines" className="text-sage hover:text-sage-hover">
+        <Link href="/guidelines" className="text-accent hover:text-accent-hover">
           community guidelines
         </Link>
         .
       </p>
-    </Card>
+    </QuestionScreen>
   );
 }

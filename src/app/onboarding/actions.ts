@@ -4,13 +4,24 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isValidCategory } from "@/lib/categories";
+import { JOURNEY_STAGES } from "@/lib/journeyStages";
+import { FEELINGS } from "@/lib/feelings";
+import { AGE_RANGES } from "@/lib/ageRanges";
+import { GENDERS } from "@/lib/genders";
+import { COUNTRIES } from "@/lib/countries";
+import { matchCircle } from "@/lib/matchCircle";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
 type OnboardingInput = {
   username: string;
   category: string;
-  bio: string;
+  categoryOtherText: string;
+  journeyStage: string;
+  feeling: string;
+  ageRange: string;
+  gender: string;
+  country: string;
 };
 
 export async function completeOnboarding(input: OnboardingInput) {
@@ -24,56 +35,55 @@ export async function completeOnboarding(input: OnboardingInput) {
   }
 
   const username = input.username.trim();
-  const bio = input.bio.trim();
+  const categoryOtherText = input.categoryOtherText.trim();
 
   if (!USERNAME_PATTERN.test(username)) {
-    return {
-      error: "Usernames are 3-20 characters: letters, numbers, and underscores only.",
-    };
+    return { error: "Usernames are 3-20 characters: letters, numbers, and underscores only." };
   }
   if (!isValidCategory(input.category)) {
-    return { error: "Please choose what brings you here." };
+    return { error: "Please choose what brought you here." };
   }
-  if (bio.length > 200) {
-    return { error: "Bio must be 200 characters or less." };
+  if (input.category === "something_else" && !categoryOtherText) {
+    return { error: "Tell us a little about what brought you here." };
+  }
+  if (!JOURNEY_STAGES.some((s) => s.slug === input.journeyStage)) {
+    return { error: "Please choose how long you've been carrying this." };
+  }
+  if (!FEELINGS.some((f) => f.slug === input.feeling)) {
+    return { error: "Please choose how you're feeling right now." };
+  }
+  if (!AGE_RANGES.some((a) => a.slug === input.ageRange)) {
+    return { error: "Please choose your age range." };
+  }
+  if (!GENDERS.some((g) => g.slug === input.gender)) {
+    return { error: "Please choose how you identify." };
+  }
+  if (!COUNTRIES.includes(input.country)) {
+    return { error: "Please choose your country." };
+  }
+
+  const circleId = await matchCircle({
+    category: input.category,
+    ageRange: input.ageRange,
+    gender: input.gender,
+  }).catch(() => null);
+
+  if (!circleId) {
+    return { error: "Something went wrong setting up your circle. Please try again." };
   }
 
   const admin = createAdminClient();
-
-  const { data: existingCircle } = await admin
-    .from("circles")
-    .select("id, member_count")
-    .eq("category", input.category)
-    .limit(1)
-    .maybeSingle();
-
-  let circleId: string;
-
-  if (existingCircle) {
-    circleId = existingCircle.id;
-    await admin
-      .from("circles")
-      .update({ member_count: (existingCircle.member_count ?? 0) + 1 })
-      .eq("id", circleId);
-  } else {
-    const { data: newCircle, error: circleError } = await admin
-      .from("circles")
-      .insert({ category: input.category, member_count: 1 })
-      .select("id")
-      .single();
-
-    if (circleError || !newCircle) {
-      return { error: "Something went wrong setting up your circle. Please try again." };
-    }
-    circleId = newCircle.id;
-  }
-
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
     username,
     category: input.category,
-    bio: bio || null,
+    bio: input.category === "something_else" ? categoryOtherText : null,
     circle_id: circleId,
+    journey_stage: input.journeyStage,
+    current_feeling: input.feeling,
+    age_range: input.ageRange,
+    gender: input.gender,
+    country: input.country,
   });
 
   if (insertError) {
