@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
 };
 
 const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
@@ -9,6 +9,8 @@ const variantClasses: Record<NonNullable<ButtonProps["variant"]>, string> = {
     "bg-accent text-accent-text hover:bg-accent-hover disabled:bg-accent/50 disabled:text-accent-text/70",
   secondary:
     "bg-surface2 text-ink border border-border hover:bg-surface2/70 disabled:opacity-50",
+  outline:
+    "bg-transparent text-accent border border-accent hover:bg-accent-soft disabled:opacity-50",
   ghost: "text-muted hover:text-ink disabled:opacity-50",
   danger:
     "bg-warn text-white hover:opacity-90 disabled:bg-warn/50 disabled:text-white/70",
