@@ -34,3 +34,21 @@ export function isSameWeek(a: Date, b: Date): boolean {
 export function formatWeekLabel(date: Date): string {
   return `Week of ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
+
+// The next occurrence of Monday, counting today. Used to default the
+// prompt week-start picker to the upcoming prompt week.
+export function nextMonday(from: Date = new Date()): Date {
+  const d = new Date(from);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const daysUntilMonday = day === 1 ? 0 : (8 - day) % 7;
+  d.setDate(d.getDate() + daysUntilMonday);
+  return d;
+}
+
+export function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

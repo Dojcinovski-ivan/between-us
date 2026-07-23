@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   const { user, profile } = await getCurrentUserAndProfile();
 
   if (!user) redirect("/login");
-  if (!profile) redirect("/onboarding");
+  if (!profile || !profile.circle_id) redirect("/onboarding");
 
   const memberSince = new Date(profile.created_at).toLocaleDateString(undefined, {
     month: "long",

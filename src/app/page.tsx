@@ -24,10 +24,10 @@ const VALUE_PROPS = [
 export default async function HomePage() {
   const { user, profile } = await getCurrentUserAndProfile();
 
-  if (user && profile) {
+  if (user && profile?.circle_id) {
     redirect("/circle");
   }
-  if (user && !profile) {
+  if (user && !profile?.circle_id) {
     redirect("/onboarding");
   }
 
