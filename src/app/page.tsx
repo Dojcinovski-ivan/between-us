@@ -10,9 +10,9 @@ import { FinalCTA } from "./_landing/FinalCTA";
 import { LandingFooter } from "./_landing/LandingFooter";
 
 export const metadata = {
-  title: "Between Us — Where your story is understood",
+  title: "Between Us: Where Your Story Is Understood",
   description:
-    "An anonymous peer support community for people healing from trauma in close relationships. Not therapy — just people who've been there.",
+    "Between Us is a free, anonymous peer support community for people affected by addiction, abuse, or emotional unavailability in their closest relationships. We are not therapy. We are the space that makes therapy feel possible.",
 };
 
 export default async function HomePage() {

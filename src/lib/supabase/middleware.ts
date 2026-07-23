@@ -4,8 +4,13 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PATHS = ["/circle", "/profile", "/onboarding", "/admin"];
 
 export async function updateSession(request: NextRequest) {
+  // Forwarded to Server Components via headers() so the root layout can
+  // know the current route (e.g. to force light mode only on "/").
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
   let response = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   });
 
   const supabase = createServerClient(
@@ -20,7 +25,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          response = NextResponse.next({ request });
+          response = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );

@@ -61,6 +61,35 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Forces light mode regardless of system preference. Used on the
+   landing page, which must always read as warm and inviting. Custom
+   property lookups resolve to the nearest ancestor that sets them, so
+   this always wins over :root's dark-mode media query for anything
+   nested inside it. */
+.force-light {
+  --color-bg: #f7f3ee;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0eae2;
+  --color-border: #e8ddd4;
+  --color-ink: #2c1810;
+  --color-muted: #6b4f3a;
+  --color-faint: #9c7b65;
+
+  --color-accent: #c4846a;
+  --color-accent-hover: #b3735a;
+  --color-accent-text: #ffffff;
+  --color-accent-soft: rgba(196, 132, 106, 0.14);
+
+  --color-sage: #8fa68e;
+  --color-sage-hover: #7a9479;
+  --color-sage-soft: rgba(143, 166, 142, 0.14);
+
+  --color-crisis: #c4846a;
+
+  --color-danger: #b54a35;
+  --color-danger-soft: rgba(181, 74, 53, 0.12);
+}
+
 @layer base {
   h1,
   h2,
