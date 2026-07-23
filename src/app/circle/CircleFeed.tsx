@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { categoryLabel } from "@/lib/categories";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
 import { SignOutButton } from "@/components/SignOutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptCard } from "./PromptCard";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
@@ -44,6 +45,30 @@ export function CircleFeed({
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [reactions] = useState<ReactionRow[]>(initialReactions);
   const [isPromptResponse, setIsPromptResponse] = useState(false);
+  const feedEndRef = useRef<HTMLDivElement>(null);
+  const hasScrolledOnLoad = useRef(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    function handleViewportChange() {
+      if (!viewport) return;
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOffset(offset);
+      if (offset > 0) {
+        feedEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      }
+    }
+
+    viewport.addEventListener("resize", handleViewportChange);
+    viewport.addEventListener("scroll", handleViewportChange);
+    return () => {
+      viewport.removeEventListener("resize", handleViewportChange);
+      viewport.removeEventListener("scroll", handleViewportChange);
+    };
+  }, []);
 
   useEffect(() => {
     const channel = supabase
@@ -94,6 +119,14 @@ export function CircleFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circle.id]);
 
+  useEffect(() => {
+    feedEndRef.current?.scrollIntoView({
+      behavior: hasScrolledOnLoad.current ? "smooth" : "auto",
+      block: "end",
+    });
+    hasScrolledOnLoad.current = true;
+  }, [posts.length]);
+
   function reactionsFor(postId: string) {
     const rows = reactions.filter((r) => r.post_id === postId);
     const reactedTypes = rows.filter((r) => r.user_id === currentUser.id).map((r) => r.type);
@@ -129,7 +162,7 @@ export function CircleFeed({
   const { thisWeek, previousWeeks } = useMemo(() => {
     const topLevel = posts
       .filter((p) => !p.parent_id)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
     const now = new Date();
     const thisWeek: Post[] = [];
@@ -148,7 +181,7 @@ export function CircleFeed({
     }
 
     const previousWeeks = Array.from(byWeek.entries())
-      .sort((a, b) => b[0] - a[0])
+      .sort((a, b) => a[0] - b[0])
       .map(([key, weekPosts]) => ({
         key,
         label: formatWeekLabel(new Date(key)),
@@ -173,6 +206,7 @@ export function CircleFeed({
           </p>
         </div>
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           <Link href="/resources" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
             Resources
           </Link>
@@ -200,30 +234,6 @@ export function CircleFeed({
       )}
 
       <div className="flex flex-col gap-6">
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted">This Week</h2>
-          {thisWeek.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-muted">
-              No posts yet this week. Be the first to share something.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {thisWeek.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  circleId={circle.id}
-                  currentUserId={currentUser.id}
-                  replies={repliesFor(post.id)}
-                  reactionsFor={reactionsFor}
-                  onDeleted={handleDeleted}
-                  onReplyPosted={handleReplyPosted}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
         {previousWeeks.length > 0 && (
           <section>
             <h2 className="mb-3 text-sm font-medium text-muted">Previous Weeks</h2>
@@ -247,9 +257,38 @@ export function CircleFeed({
             </div>
           </section>
         )}
+
+        <section>
+          <h2 className="mb-3 text-sm font-medium text-muted">This Week</h2>
+          {thisWeek.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-muted">
+              No posts yet this week. Be the first to share something.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {thisWeek.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  circleId={circle.id}
+                  currentUserId={currentUser.id}
+                  replies={repliesFor(post.id)}
+                  reactionsFor={reactionsFor}
+                  onDeleted={handleDeleted}
+                  onReplyPosted={handleReplyPosted}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
-      <div className="sticky bottom-4 mt-6 rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30">
+      <div ref={feedEndRef} />
+
+      <div
+        className="sticky mt-6 rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30"
+        style={{ bottom: keyboardOffset + 16 }}
+      >
         <Composer
           circleId={circle.id}
           parentId={null}

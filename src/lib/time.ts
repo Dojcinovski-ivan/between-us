@@ -32,7 +32,11 @@ export function isSameWeek(a: Date, b: Date): boolean {
 }
 
 export function formatWeekLabel(date: Date): string {
-  return `Week of ${date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  // Locale fixed to "en-US" rather than left to the runtime default:
+  // that default resolves differently on the server than in the
+  // browser, which previously produced a server/client mismatch
+  // ("Jun 29" vs "29 Jun") and triggered a full hydration reset.
+  return `Week of ${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
 // The next occurrence of Monday, counting today. Used to default the

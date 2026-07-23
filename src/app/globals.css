@@ -29,30 +29,31 @@
   --color-danger-soft: rgba(181, 74, 53, 0.12);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #2a2118;
-    --color-surface: #352a20;
-    --color-surface-2: #3f3228;
-    --color-border: #4a3c30;
-    --color-ink: #f2ede6;
-    --color-muted: #c8b5a5;
-    --color-faint: #8a7060;
+/* Manual dark mode, toggled via ThemeToggle and persisted to
+   localStorage. No longer driven by system preference, since the app
+   defaults to light everywhere except when the user opts in. */
+.dark {
+  --color-bg: #2a2118;
+  --color-surface: #352a20;
+  --color-surface-2: #3f3228;
+  --color-border: #4a3c30;
+  --color-ink: #f2ede6;
+  --color-muted: #c8b5a5;
+  --color-faint: #8a7060;
 
-    --color-accent: #c4846a;
-    --color-accent-hover: #d4956b;
-    --color-accent-text: #ffffff;
-    --color-accent-soft: rgba(196, 132, 106, 0.18);
+  --color-accent: #c4846a;
+  --color-accent-hover: #d4956b;
+  --color-accent-text: #ffffff;
+  --color-accent-soft: rgba(196, 132, 106, 0.18);
 
-    --color-sage: #8fa68e;
-    --color-sage-hover: #9ab89a;
-    --color-sage-soft: rgba(143, 166, 142, 0.18);
+  --color-sage: #8fa68e;
+  --color-sage-hover: #9ab89a;
+  --color-sage-soft: rgba(143, 166, 142, 0.18);
 
-    --color-crisis: #e8956a;
+  --color-crisis: #e8956a;
 
-    --color-danger: #e0674a;
-    --color-danger-soft: rgba(224, 103, 74, 0.16);
-  }
+  --color-danger: #e0674a;
+  --color-danger-soft: rgba(224, 103, 74, 0.16);
 }
 
 body {

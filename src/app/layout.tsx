@@ -20,6 +20,16 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        {/* Applies the saved theme before first paint so there is no
+            flash of the wrong theme. Light is the default; dark only
+            applies when the user has explicitly opted in before. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark');}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <div
           className={`flex min-h-screen flex-col bg-bg font-sans text-ink ${isLandingPage ? "force-light" : ""}`}
