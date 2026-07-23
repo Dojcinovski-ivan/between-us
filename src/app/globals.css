@@ -104,3 +104,16 @@ body {
     text-wrap: balance;
   }
 }
+
+/* iOS Safari auto zooms in on any input or textarea with a computed
+   font size under 16px. Forcing 16px on mobile viewports only (rather
+   than everywhere) keeps desktop typography unchanged while stopping
+   that zoom across every form in the app, including inputs styled
+   with Tailwind's smaller text utilities. */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

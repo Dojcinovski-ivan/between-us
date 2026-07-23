@@ -265,7 +265,7 @@ export function CircleFeed({
               No posts yet this week. Be the first to share something.
             </p>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-5">
               {thisWeek.map((post) => (
                 <PostCard
                   key={post.id}

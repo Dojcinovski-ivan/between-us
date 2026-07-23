@@ -27,7 +27,7 @@ export function WeekSection({
         </span>
         <span className="text-faint">{open ? "−" : "+"}</span>
       </button>
-      {open && <div className="mt-2 flex flex-col gap-3">{children}</div>}
+      {open && <div className="mt-2 flex flex-col gap-5">{children}</div>}
     </div>
   );
 }

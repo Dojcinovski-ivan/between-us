@@ -142,7 +142,7 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
 
           {mode === "reportSent" && (
             <p className="p-3 text-center text-sm text-muted">
-              Thanks — we&apos;ll take a look.
+              Thanks, we&apos;ll take a look.
             </p>
           )}
         </div>

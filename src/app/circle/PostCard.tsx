@@ -10,55 +10,42 @@ import { Composer } from "./Composer";
 
 type ReactionData = { reactedTypes: ReactionType[]; counts: Record<ReactionType, number> };
 
-type PostCardProps = {
+type MessageBubbleProps = {
   post: Post;
-  circleId: string;
-  currentUserId: string;
-  replies: Post[];
-  reactionsFor: (postId: string) => ReactionData;
-  onDeleted: (postId: string) => void;
-  onReplyPosted: (reply: Post) => void;
-};
-
-function PostBody({
-  post,
-  currentUserId,
-  replyCount,
-  reactionsFor,
-  onDeleted,
-}: {
-  post: Post;
-  currentUserId: string;
+  isOwnPost: boolean;
   replyCount: number;
   reactionsFor: (postId: string) => ReactionData;
   onDeleted: (postId: string) => void;
-}) {
-  const isOwnPost = post.user_id === currentUserId;
+};
+
+function MessageBubble({ post, isOwnPost, replyCount, reactionsFor, onDeleted }: MessageBubbleProps) {
   const { reactedTypes, counts } = reactionsFor(post.id);
 
   return (
-    <div>
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium text-ink">{post.users?.username ?? "someone"}</span>
-          <span className="text-faint">· {timeAgo(post.created_at)}</span>
-          {post.is_prompt_response && (
-            <span className="rounded-full bg-sage-soft px-2 py-0.5 text-xs text-sage">
-              Prompt response
-            </span>
-          )}
-        </div>
-        <PostMenu
-          postId={post.id}
-          isOwnPost={isOwnPost}
-          replyCount={replyCount}
-          onDeleted={() => onDeleted(post.id)}
-        />
+    <div className={`flex flex-col ${isOwnPost ? "items-end" : "items-start"}`}>
+      <div className="flex items-center gap-2 px-1 text-xs text-muted">
+        <span className="font-medium text-ink">{isOwnPost ? "You" : (post.users?.username ?? "someone")}</span>
+        {post.is_prompt_response && (
+          <span className="rounded-full bg-sage-soft px-2 py-0.5 text-[11px] text-sage">
+            Prompt response
+          </span>
+        )}
+        <PostMenu postId={post.id} isOwnPost={isOwnPost} replyCount={replyCount} onDeleted={() => onDeleted(post.id)} />
       </div>
 
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink">{post.content}</p>
+      <div
+        className={`mt-1 max-w-[80%] rounded-2xl px-4 py-3 sm:max-w-[60%] ${
+          isOwnPost
+            ? "rounded-br-md bg-accent text-accent-text"
+            : "rounded-bl-md bg-surface2 text-ink"
+        }`}
+      >
+        <p className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
+      </div>
 
-      <div className="mt-3">
+      <span className="mt-1 px-1 text-[11px] text-faint">{timeAgo(post.created_at)}</span>
+
+      <div className="mt-2 px-1">
         <ReactionButtons
           postId={post.id}
           isOwnPost={isOwnPost}
@@ -69,6 +56,16 @@ function PostBody({
     </div>
   );
 }
+
+type PostCardProps = {
+  post: Post;
+  circleId: string;
+  currentUserId: string;
+  replies: Post[];
+  reactionsFor: (postId: string) => ReactionData;
+  onDeleted: (postId: string) => void;
+  onReplyPosted: (reply: Post) => void;
+};
 
 export function PostCard({
   post,
@@ -81,18 +78,19 @@ export function PostCard({
 }: PostCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [replying, setReplying] = useState(false);
+  const isOwnPost = post.user_id === currentUserId;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <PostBody
+    <div className="flex flex-col gap-2">
+      <MessageBubble
         post={post}
-        currentUserId={currentUserId}
+        isOwnPost={isOwnPost}
         replyCount={replies.length}
         reactionsFor={reactionsFor}
         onDeleted={onDeleted}
       />
 
-      <div className="mt-3 flex items-center gap-4 border-t border-border pt-3">
+      <div className={`px-1 ${isOwnPost ? "text-right" : "text-left"}`}>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -100,35 +98,25 @@ export function PostCard({
         >
           {replies.length === 0
             ? "Reply"
-            : `${replies.length} ${replies.length === 1 ? "reply" : "replies"}`}
+            : `${expanded ? "Hide" : "View"} ${replies.length === 1 ? "reply" : "replies"} (${replies.length})`}
         </button>
-        {!expanded && (
-          <button
-            type="button"
-            onClick={() => {
-              setExpanded(true);
-              setReplying(true);
-            }}
-            className="text-xs text-muted hover:text-ink"
-          >
-            Write a reply
-          </button>
-        )}
       </div>
 
       {expanded && (
-        <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 pl-4">
-          {replies.map((reply) => (
-            <div key={reply.id} className="rounded-xl border border-border bg-surface2 p-3">
-              <PostBody
+        <div className="flex flex-col gap-3 pl-4">
+          {replies.map((reply) => {
+            const isOwnReply = reply.user_id === currentUserId;
+            return (
+              <MessageBubble
+                key={reply.id}
                 post={reply}
-                currentUserId={currentUserId}
+                isOwnPost={isOwnReply}
                 replyCount={0}
                 reactionsFor={reactionsFor}
                 onDeleted={onDeleted}
               />
-            </div>
-          ))}
+            );
+          })}
 
           {replying ? (
             <Composer
