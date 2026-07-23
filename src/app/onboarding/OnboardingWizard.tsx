@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -120,6 +121,14 @@ export function OnboardingWizard() {
           </Button>
         </div>
       </form>
+
+      <p className="mt-4 text-center text-xs text-faint">
+        By joining, you agree to our{" "}
+        <Link href="/guidelines" className="text-sage hover:text-sage-hover">
+          community guidelines
+        </Link>
+        .
+      </p>
     </Card>
   );
 }

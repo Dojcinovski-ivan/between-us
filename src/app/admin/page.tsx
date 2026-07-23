@@ -5,7 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { weekStart } from "@/lib/time";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AdminPanel } from "./AdminPanel";
-import type { PendingReport, Prompt } from "./types";
+import type { PendingReport, Prompt, Resource } from "./types";
+
+export const metadata = {
+  title: "Admin — Between Us",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminPage() {
   const { user, profile } = await getCurrentUserAndProfile();
@@ -20,6 +25,7 @@ export default async function AdminPage() {
   const [
     { data: reports },
     { data: prompts },
+    { data: resources },
     { count: totalUsers },
     { count: totalCircles },
     { count: totalPosts },
@@ -35,6 +41,10 @@ export default async function AdminPage() {
       .from("prompts")
       .select("id, category, content, week_start")
       .order("week_start", { ascending: false }),
+    supabase
+      .from("resources")
+      .select("id, title, type, description, url, category")
+      .order("created_at", { ascending: false }),
     supabase.from("users").select("*", { count: "exact", head: true }),
     supabase.from("circles").select("*", { count: "exact", head: true }),
     supabase.from("posts").select("*", { count: "exact", head: true }).eq("is_removed", false),
@@ -62,6 +72,7 @@ export default async function AdminPage() {
         <AdminPanel
           initialReports={(reports as unknown as PendingReport[]) ?? []}
           initialPrompts={(prompts as Prompt[]) ?? []}
+          initialResources={(resources as Resource[]) ?? []}
           stats={{
             totalUsers: totalUsers ?? 0,
             totalCircles: totalCircles ?? 0,

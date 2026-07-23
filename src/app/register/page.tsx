@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { RegisterForm } from "./RegisterForm";
 
+export const metadata = {
+  title: "Create Your Account — Between Us",
+  description: "Join Between Us — an anonymous peer support community.",
+};
+
 export default async function RegisterPage() {
   const { user, profile } = await getCurrentUserAndProfile();
 

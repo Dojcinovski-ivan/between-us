@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 
+export const metadata = {
+  title: "Between Us — Where your story is understood",
+  description:
+    "An anonymous peer support community for people healing from trauma in close relationships. Not therapy — just people who've been there.",
+};
+
 const VALUE_PROPS = [
   {
     emoji: "🤍",

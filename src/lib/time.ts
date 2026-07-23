@@ -52,3 +52,19 @@ export function toDateInputValue(date: Date): string {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+// 1-indexed: the first 7 days since joining are "week 1".
+export function weeksSince(dateString: string, from: Date = new Date()): number {
+  const start = new Date(dateString);
+  const days = Math.floor((from.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(1, Math.floor(days / 7) + 1);
+}
+
+const FOUR_WEEKS_MS = 4 * 7 * 24 * 60 * 60 * 1000;
+
+export function isEligibleForCheckIn(joinedAt: string, lastCheckInAt: string | null, now: Date = new Date()): boolean {
+  const joined = new Date(joinedAt).getTime();
+  if (now.getTime() - joined < FOUR_WEEKS_MS) return false;
+  if (!lastCheckInAt) return true;
+  return now.getTime() - new Date(lastCheckInAt).getTime() >= FOUR_WEEKS_MS;
+}

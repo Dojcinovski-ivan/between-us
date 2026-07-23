@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { OnboardingWizard } from "./OnboardingWizard";
 
+export const metadata = {
+  title: "Get Started — Between Us",
+  description: "Tell us what brings you here and find your circle.",
+};
+
 export default async function OnboardingPage() {
   const { user, profile } = await getCurrentUserAndProfile();
 

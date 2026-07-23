@@ -7,6 +7,11 @@ import { Card } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/SignOutButton";
 import { BioEditor } from "./BioEditor";
 
+export const metadata = {
+  title: "Your Profile — Between Us",
+  description: "View and edit your anonymous profile.",
+};
+
 export default async function ProfilePage() {
   const { user, profile } = await getCurrentUserAndProfile();
 

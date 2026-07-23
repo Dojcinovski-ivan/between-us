@@ -24,3 +24,12 @@ export type Stats = {
   pendingReports: number;
   resolvedThisWeek: number;
 };
+
+export type Resource = {
+  id: string;
+  title: string;
+  type: string;
+  description: string | null;
+  url: string | null;
+  category: string | null;
+};

@@ -11,6 +11,8 @@ import { PromptCard } from "./PromptCard";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
 import { WeekSection } from "./WeekSection";
+import { CheckInPrompt } from "./CheckInPrompt";
+import { EducationalCard } from "./EducationalCard";
 import type { Post, ReactionRow } from "./types";
 
 const MAIN_COMPOSER_ID = "composer-textarea";
@@ -18,6 +20,8 @@ const MAIN_COMPOSER_ID = "composer-textarea";
 type Circle = { id: string; category: string; member_count: number };
 type Prompt = { id: string; content: string } | null;
 type CurrentUser = { id: string; username: string };
+type CheckIn = { weeksIn: number; currentStage: string } | null;
+type EducationalContent = { title: string; content: string } | null;
 
 export function CircleFeed({
   circle,
@@ -25,12 +29,16 @@ export function CircleFeed({
   initialPosts,
   initialReactions,
   currentUser,
+  checkIn,
+  educationalContent,
 }: {
   circle: Circle;
   prompt: Prompt;
   initialPosts: Post[];
   initialReactions: ReactionRow[];
   currentUser: CurrentUser;
+  checkIn: CheckIn;
+  educationalContent: EducationalContent;
 }) {
   const supabase = createClient();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
@@ -157,7 +165,7 @@ export function CircleFeed({
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col px-4 pb-8 pt-6 sm:px-6">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-y-2">
         <div>
           <h1 className="text-lg font-semibold text-ink">{categoryLabel(circle.category)} Circle</h1>
           <p className="text-xs text-muted">
@@ -175,9 +183,21 @@ export function CircleFeed({
         </div>
       </header>
 
+      {checkIn && (
+        <CheckInPrompt
+          userId={currentUser.id}
+          weeksIn={checkIn.weeksIn}
+          currentStage={checkIn.currentStage}
+        />
+      )}
+
       <div className="mb-6">
         <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} />
       </div>
+
+      {educationalContent && (
+        <EducationalCard title={educationalContent.title} content={educationalContent.content} />
+      )}
 
       <div className="flex flex-col gap-6">
         <section>
