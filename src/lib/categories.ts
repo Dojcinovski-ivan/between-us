@@ -29,6 +29,11 @@ export const CATEGORIES = [
     label: "Emotional Abuse",
     description: "A relationship where words or silence were used as weapons.",
   },
+  {
+    slug: "addiction_impact",
+    label: "Loving Someone With an Addiction",
+    description: "Living with, or having grown up around, someone else's addiction.",
+  },
 ] as const;
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];

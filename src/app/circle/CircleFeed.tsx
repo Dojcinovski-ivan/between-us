@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { categoryLabel } from "@/lib/categories";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
@@ -163,7 +164,15 @@ export function CircleFeed({
             {circle.member_count} {circle.member_count === 1 ? "member" : "members"}
           </p>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-1">
+          <Link href="/resources" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
+            Resources
+          </Link>
+          <Link href="/profile" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
+            Profile
+          </Link>
+          <SignOutButton />
+        </div>
       </header>
 
       <div className="mb-6">
