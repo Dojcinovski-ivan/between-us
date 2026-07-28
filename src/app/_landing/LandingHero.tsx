@@ -6,14 +6,14 @@ export function LandingHero() {
     <section className="relative isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
         <Image
-          src="/landing/hero.jpg"
-          alt="A lone figure walking over sunlit dunes at dawn"
+          src="/landing/hero.png"
+          alt="An illustrated circle of people sitting together on a hillside at sunset"
           fill
           priority
           sizes="100vw"
           className="animate-drift object-cover"
         />
-        <div className="absolute inset-0 bg-[rgba(247,243,238,0.72)]" />
+        <div className="absolute inset-0 bg-[rgba(247,243,238,0.4)]" />
         <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-bg" />
       </div>
 
