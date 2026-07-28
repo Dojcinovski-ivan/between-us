@@ -22,7 +22,10 @@ function MessageBubble({ post, isOwnPost, replyCount, reactionsFor, onDeleted }:
   const { reactedTypes, counts } = reactionsFor(post.id);
 
   return (
-    <div className={`flex flex-col ${isOwnPost ? "items-end" : "items-start"}`}>
+    <div
+      id={`post-${post.id}`}
+      className={`flex scroll-mb-52 flex-col ${isOwnPost ? "items-end" : "items-start"}`}
+    >
       <div className="flex items-center gap-2 px-1 text-xs text-muted">
         <span className="font-medium text-ink">{isOwnPost ? "You" : (post.users?.username ?? "someone")}</span>
         {post.is_prompt_response && (

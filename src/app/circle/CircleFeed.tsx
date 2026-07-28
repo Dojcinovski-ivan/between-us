@@ -46,8 +46,47 @@ export function CircleFeed({
   const [reactions] = useState<ReactionRow[]>(initialReactions);
   const [isPromptResponse, setIsPromptResponse] = useState(false);
   const feedEndRef = useRef<HTMLDivElement>(null);
-  const hasScrolledOnLoad = useRef(false);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  // The page itself scrolls (there is no inner overflow container), so we
+  // measure against the document. A small threshold counts "close enough"
+  // as at the bottom.
+  function isNearBottom() {
+    const threshold = 150;
+    return (
+      window.innerHeight + window.scrollY >=
+      document.documentElement.scrollHeight - threshold
+    );
+  }
+
+  // Scrolls the window (not feedEndRef) to its true maximum. The composer
+  // is position:sticky, so it reserves real space at the end of the flow;
+  // scrolling to the document's max lands the newest message just above the
+  // composer rather than tucked behind it, which scrollIntoView on the
+  // end marker would do.
+  function scrollToBottom(behavior: ScrollBehavior) {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior });
+  }
+
+  // Scrolls to a specific post's own DOM node. Deferred a macrotask so it
+  // runs after React has committed the new post. Targeting the element
+  // (which is guaranteed present) rather than the document height avoids a
+  // race: Supabase can deliver the realtime echo of your own post before
+  // the insert's HTTP response resolves, making the local append a no-op
+  // and swallowing an effect-based scroll. The bubbles carry a large
+  // scroll-margin-bottom so block:"end" clears the sticky composer.
+  function scrollToPost(postId: string, block: ScrollLogicalPosition) {
+    // One animation frame, so it runs after React has committed and the
+    // browser has laid out the new bubble (setTimeout(0) could fire before
+    // layout settled and stop short). "auto" (instant) rather than "smooth":
+    // a long smooth scroll can be interrupted mid-animation. The bubbles
+    // carry scroll-margin-bottom so block:"end" clears the sticky composer.
+    requestAnimationFrame(() => {
+      const node = document.getElementById(`post-${postId}`);
+      if (node) node.scrollIntoView({ behavior: "auto", block });
+      else scrollToBottom("auto");
+    });
+  }
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -95,7 +134,15 @@ export function CircleFeed({
             username = data?.username ?? "someone";
           }
           const post: Post = { ...row, users: { username } };
+          // Capture the reader's position before the new post grows the
+          // document. Your own posts are followed to the bottom by the
+          // submit handlers, so here we only react to other members.
+          const isOwn = row.user_id === currentUser.id;
+          const wasNearBottom = isNearBottom();
           setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [...prev, post]));
+          if (!isOwn && wasNearBottom) {
+            setTimeout(() => scrollToBottom("smooth"), 0);
+          }
         },
       )
       .on(
@@ -119,13 +166,11 @@ export function CircleFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circle.id]);
 
+  // On load, land at the bottom instantly so the newest messages show first.
   useEffect(() => {
-    feedEndRef.current?.scrollIntoView({
-      behavior: hasScrolledOnLoad.current ? "smooth" : "auto",
-      block: "end",
-    });
-    hasScrolledOnLoad.current = true;
-  }, [posts.length]);
+    scrollToBottom("auto");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function reactionsFor(postId: string) {
     const rows = reactions.filter((r) => r.post_id === postId);
@@ -146,10 +191,16 @@ export function CircleFeed({
 
   function handleReplyPosted(reply: Post) {
     setPosts((prev) => (prev.some((p) => p.id === reply.id) ? prev : [...prev, reply]));
+    // Your own reply: keep the reply itself centered in view rather than
+    // jumping to the very bottom, since replies are threaded mid-feed.
+    scrollToPost(reply.id, "center");
   }
 
   function handleTopLevelPosted(post: Post) {
     setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [...prev, post]));
+    // Your own new post: follow it to the bottom (its scroll-margin clears
+    // the sticky composer so the whole bubble stays visible).
+    scrollToPost(post.id, "end");
   }
 
   function handleRespondToPrompt() {
