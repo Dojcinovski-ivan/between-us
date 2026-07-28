@@ -249,7 +249,7 @@ export function CircleFeed({
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col px-4 pb-8 pt-6 sm:px-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-y-2">
+      <header className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center justify-between gap-y-2 border-b border-border bg-bg px-4 py-3 sm:-mx-6 sm:px-6">
         <div>
           <h1 className="text-lg font-semibold text-ink">{categoryLabel(circle.category)} Circle</h1>
           <p className="text-xs text-muted">
@@ -284,7 +284,7 @@ export function CircleFeed({
         <EducationalCard title={educationalContent.title} content={educationalContent.content} />
       )}
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 pb-8">
         {previousWeeks.length > 0 && (
           <section>
             <h2 className="mb-3 text-sm font-medium text-muted">Previous Weeks</h2>
