@@ -42,6 +42,17 @@ export function isValidCategory(value: string): value is CategorySlug {
   return CATEGORIES.some((c) => c.slug === value);
 }
 
+// Turns a raw category slug into a readable title, e.g.
+// "narcissistic_parent" becomes "Narcissistic Parent". Used as the
+// fallback for any circle whose category is not in CATEGORIES above.
+function humanizeSlug(slug: string): string {
+  return slug
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function categoryLabel(slug: string): string {
-  return CATEGORIES.find((c) => c.slug === slug)?.label ?? slug;
+  return CATEGORIES.find((c) => c.slug === slug)?.label ?? humanizeSlug(slug);
 }

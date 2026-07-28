@@ -70,7 +70,7 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-xl border border-border bg-surface2 p-2 shadow-lg shadow-black/30">
+        <div className="absolute right-0 top-full z-40 mt-1 w-56 rounded-xl border border-border bg-surface2 p-2 shadow-lg shadow-black/30">
           {mode === "menu" && (
             <div className="flex flex-col">
               {!isOwnPost && (

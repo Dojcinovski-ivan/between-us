@@ -336,18 +336,23 @@ export function CircleFeed({
 
       <div ref={feedEndRef} />
 
+      {/* Full-bleed opaque band so messages disappear cleanly behind the
+          composer instead of showing around the floating card, and an
+          explicit z-index so it always layers above the (static) posts. */}
       <div
-        className="sticky mt-6 rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30"
-        style={{ bottom: keyboardOffset + 16 }}
+        className="sticky z-30 -mx-4 bg-bg px-4 pb-4 pt-3 sm:-mx-6 sm:px-6"
+        style={{ bottom: keyboardOffset }}
       >
-        <Composer
-          circleId={circle.id}
-          parentId={null}
-          textareaId={MAIN_COMPOSER_ID}
-          isPromptResponse={isPromptResponse}
-          onClearPromptResponse={() => setIsPromptResponse(false)}
-          onSubmitted={handleTopLevelPosted}
-        />
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30">
+          <Composer
+            circleId={circle.id}
+            parentId={null}
+            textareaId={MAIN_COMPOSER_ID}
+            isPromptResponse={isPromptResponse}
+            onClearPromptResponse={() => setIsPromptResponse(false)}
+            onSubmitted={handleTopLevelPosted}
+          />
+        </div>
       </div>
     </div>
   );
