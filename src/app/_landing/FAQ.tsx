@@ -1,7 +1,3 @@
-"use client";
-
-import { useState } from "react";
-
 const FAQS = [
   {
     question: "What is Between Us?",
@@ -26,31 +22,24 @@ const FAQS = [
 ];
 
 export function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
   return (
-    <section className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:py-40">
-      <h2 className="text-center text-4xl font-semibold text-ink">Questions you might have</h2>
+    <section className="mx-auto w-full max-w-2xl px-6 py-24">
+      <h2 className="font-display text-[clamp(2.25rem,4vw,3rem)] font-medium text-ink">
+        Questions, answered
+      </h2>
 
-      <div className="mt-14 divide-y divide-border/60">
-        {FAQS.map((faq, index) => {
-          const isOpen = openIndex === index;
-          return (
-            <div key={faq.question}>
-              <button
-                type="button"
-                onClick={() => setOpenIndex(isOpen ? null : index)}
-                className="flex w-full items-center justify-between gap-3 py-6 text-left"
-              >
-                <span className="font-serif text-lg text-ink">{faq.question}</span>
-                <span className="shrink-0 text-xl text-faint">{isOpen ? "−" : "+"}</span>
-              </button>
-              {isOpen && (
-                <p className="-mt-2 pb-6 text-sm leading-relaxed text-muted">{faq.answer}</p>
-              )}
-            </div>
-          );
-        })}
+      <div className="mt-10 border-t border-border">
+        {FAQS.map((faq) => (
+          <details key={faq.question} className="group border-b border-border py-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg text-ink marker:content-none">
+              <span>{faq.question}</span>
+              <span className="shrink-0 text-accent transition-transform duration-300 ease-calm group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="mt-3 leading-relaxed text-muted">{faq.answer}</p>
+          </details>
+        ))}
       </div>
     </section>
   );

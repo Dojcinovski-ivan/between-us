@@ -3,16 +3,17 @@ import { getCurrentUserAndProfile } from "@/lib/auth";
 import { LandingNav } from "./_landing/LandingNav";
 import { LandingHero } from "./_landing/LandingHero";
 import { ThreeBenefits } from "./_landing/ThreeBenefits";
-import { CategoryShowcase } from "./_landing/CategoryShowcase";
+import { WhoItIsFor } from "./_landing/WhoItIsFor";
 import { Testimonial } from "./_landing/Testimonial";
 import { FAQ } from "./_landing/FAQ";
 import { FinalCTA } from "./_landing/FinalCTA";
 import { LandingFooter } from "./_landing/LandingFooter";
+import { fraunces, karla } from "./_landing/fonts";
 
 export const metadata = {
-  title: "Between Us: Where Your Story Is Understood",
+  title: "Between Us: Anonymous peer support for healing",
   description:
-    "Between Us is a free, anonymous peer support community for people affected by addiction, abuse, or emotional unavailability in their closest relationships. We are not therapy. We are the space that makes therapy feel possible.",
+    "A free, anonymous community for people healing from someone else's addiction, abuse, or emotional unavailability. Find your circle.",
 };
 
 export default async function HomePage() {
@@ -26,11 +27,11 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="flex min-h-[calc(100vh-3rem)] flex-col">
+    <main className={`landing-theme font-karla ${fraunces.variable} ${karla.variable}`}>
       <LandingNav />
       <LandingHero />
       <ThreeBenefits />
-      <CategoryShowcase />
+      <WhoItIsFor />
       <Testimonial />
       <FAQ />
       <FinalCTA />

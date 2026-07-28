@@ -1,24 +1,26 @@
 import Link from "next/link";
+import { LogoMark } from "./LogoMark";
 
 export function LandingNav() {
   return (
-    <nav className="sticky top-0 z-20 bg-bg">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
-        <Link href="/" className="font-serif text-2xl text-ink">
-          Between Us
+    <header className="absolute inset-x-0 top-0 z-20">
+      <nav className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-6">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          <LogoMark className="h-8 w-8 shrink-0 text-accent" />
+          <span className="font-display text-xl text-ink">Between Us</span>
         </Link>
-        <div className="flex items-center gap-4 sm:gap-6">
-          <Link href="/login" className="text-sm text-muted hover:text-ink">
+        <div className="flex shrink-0 items-center gap-3">
+          <Link href="/login" className="px-3 py-2 text-sm text-muted hover:text-ink">
             Log in
           </Link>
           <Link
             href="/register"
-            className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-accent-text transition-colors hover:bg-accent-hover"
+            className="rounded-full bg-gradient-ember px-5 py-2.5 text-sm font-medium text-accent-text shadow-soft transition-transform duration-300 ease-calm hover:-translate-y-0.5"
           >
             Find your circle
           </Link>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
