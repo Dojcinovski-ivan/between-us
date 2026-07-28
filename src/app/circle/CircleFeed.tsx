@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptCard } from "./PromptCard";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
+import { ThreadPanel } from "./ThreadPanel";
 import { WeekSection } from "./WeekSection";
 import { CheckInPrompt } from "./CheckInPrompt";
 import { EducationalCard } from "./EducationalCard";
@@ -32,6 +33,7 @@ export function CircleFeed({
   currentUser,
   checkIn,
   educationalContent,
+  dailyAdvice,
 }: {
   circle: Circle;
   prompt: Prompt;
@@ -40,11 +42,13 @@ export function CircleFeed({
   currentUser: CurrentUser;
   checkIn: CheckIn;
   educationalContent: EducationalContent;
+  dailyAdvice: string | null;
 }) {
   const supabase = createClient();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [reactions] = useState<ReactionRow[]>(initialReactions);
   const [isPromptResponse, setIsPromptResponse] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
@@ -190,10 +194,10 @@ export function CircleFeed({
   }
 
   function handleReplyPosted(reply: Post) {
+    // Replies no longer render inline in the main feed, so this only needs
+    // to update shared state. The thread panel scrolls itself to the new
+    // reply via its own effect, keyed off the same posts state.
     setPosts((prev) => (prev.some((p) => p.id === reply.id) ? prev : [...prev, reply]));
-    // Your own reply: keep the reply itself centered in view rather than
-    // jumping to the very bottom, since replies are threaded mid-feed.
-    scrollToPost(reply.id, "center");
   }
 
   function handleTopLevelPosted(post: Post) {
@@ -202,6 +206,23 @@ export function CircleFeed({
     // the sticky composer so the whole bubble stays visible).
     scrollToPost(post.id, "end");
   }
+
+  function openThread(postId: string) {
+    setActiveThreadId(postId);
+  }
+
+  function closeThread() {
+    setActiveThreadId(null);
+  }
+
+  // If the threaded post is deleted while its panel is open (by its
+  // author, an admin, or a realtime delete from elsewhere), close the
+  // panel rather than leaving it open on a post that no longer exists.
+  useEffect(() => {
+    if (activeThreadId && !posts.some((p) => p.id === activeThreadId)) {
+      setActiveThreadId(null);
+    }
+  }, [posts, activeThreadId]);
 
   function handleRespondToPrompt() {
     setIsPromptResponse(true);
@@ -247,26 +268,60 @@ export function CircleFeed({
       .filter((p) => p.parent_id === postId)
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
+  const activeThreadPost = activeThreadId ? (posts.find((p) => p.id === activeThreadId) ?? null) : null;
+
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col px-4 pb-8 pt-6 sm:px-6">
-      <header className="sticky top-0 z-20 -mx-4 mb-6 flex flex-wrap items-center justify-between gap-y-2 border-b border-border bg-bg px-4 py-3 sm:-mx-6 sm:px-6">
-        <div>
-          <h1 className="text-lg font-semibold text-ink">{categoryLabel(circle.category)} Circle</h1>
-          <p className="text-xs text-muted">
-            {circle.member_count} {circle.member_count === 1 ? "member" : "members"}
-          </p>
+    <>
+    <div
+      className={`mx-auto w-full max-w-2xl transition-[max-width,padding-right] duration-300 ease-out ${
+        activeThreadPost ? "md:max-w-6xl md:pr-[40%]" : "md:max-w-2xl"
+      }`}
+    >
+    <div
+      className={`min-h-[calc(100vh-3rem)] flex-col px-4 pb-8 pt-6 sm:px-6 ${
+        activeThreadPost ? "hidden md:flex" : "flex"
+      }`}
+    >
+      {/* Header and the daily advice bar stick together as one block so
+          both stay visible while scrolling, and the advice sits at the top
+          where it never hides behind the composer. */}
+      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-bg sm:-mx-6">
+        <header className="flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 sm:px-6">
+          <div>
+            <h1 className="text-lg font-semibold text-ink">
+              {categoryLabel(circle.category)} Circle
+            </h1>
+            <p className="text-xs text-muted">
+              {circle.member_count} {circle.member_count === 1 ? "member" : "members"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link href="/resources" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
+              Resources
+            </Link>
+            <Link href="/profile" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
+              Profile
+            </Link>
+            <SignOutButton />
+          </div>
+        </header>
+
+        {dailyAdvice && (
+          <div className="px-4 pb-3 sm:px-6">
+            <div className="rounded-xl bg-sage-soft px-4 py-2.5">
+              <p className="text-sm leading-relaxed text-ink">
+                <span className="font-medium text-sage">A thought for today. </span>
+                {dailyAdvice}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="px-4 pb-3 sm:px-6">
+          <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} />
         </div>
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <Link href="/resources" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
-            Resources
-          </Link>
-          <Link href="/profile" className="px-2 py-1.5 text-sm text-muted hover:text-ink">
-            Profile
-          </Link>
-          <SignOutButton />
-        </div>
-      </header>
+      </div>
 
       {checkIn && (
         <CheckInPrompt
@@ -275,10 +330,6 @@ export function CircleFeed({
           currentStage={checkIn.currentStage}
         />
       )}
-
-      <div className="mb-6">
-        <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} />
-      </div>
 
       {educationalContent && (
         <EducationalCard title={educationalContent.title} content={educationalContent.content} />
@@ -295,12 +346,11 @@ export function CircleFeed({
                     <PostCard
                       key={post.id}
                       post={post}
-                      circleId={circle.id}
                       currentUserId={currentUser.id}
-                      replies={repliesFor(post.id)}
+                      replyCount={repliesFor(post.id).length}
                       reactionsFor={reactionsFor}
                       onDeleted={handleDeleted}
-                      onReplyPosted={handleReplyPosted}
+                      onOpenThread={openThread}
                     />
                   ))}
                 </WeekSection>
@@ -321,12 +371,11 @@ export function CircleFeed({
                 <PostCard
                   key={post.id}
                   post={post}
-                  circleId={circle.id}
                   currentUserId={currentUser.id}
-                  replies={repliesFor(post.id)}
+                  replyCount={repliesFor(post.id).length}
                   reactionsFor={reactionsFor}
                   onDeleted={handleDeleted}
-                  onReplyPosted={handleReplyPosted}
+                  onOpenThread={openThread}
                 />
               ))}
             </div>
@@ -355,5 +404,30 @@ export function CircleFeed({
         </div>
       </div>
     </div>
+    </div>
+
+    {/* A fixed panel rather than a sticky flex sibling: fixed positioning
+        never depends on document flow or scroll position, which sidesteps
+        a real bug an earlier sticky-column version had (focusing the
+        thread's reply textarea triggered the browser's focus-scroll-into-
+        view behavior against the wrong scroll container and reset the
+        whole page to the top). Full width on mobile, 40% on desktop, with
+        the feed's own padding-right (set above) making room for it. */}
+    {activeThreadPost && (
+      <div className="fixed inset-y-0 right-0 z-50 w-full border-l border-border bg-bg md:w-[40%]">
+        <div className="animate-slide-in-right h-full">
+          <ThreadPanel
+            parent={activeThreadPost}
+            replies={repliesFor(activeThreadPost.id)}
+            circleId={circle.id}
+            currentUserId={currentUser.id}
+            onClose={closeThread}
+            onDeleted={handleDeleted}
+            onReplyPosted={handleReplyPosted}
+          />
+        </div>
+      </div>
+    )}
+  </>
   );
 }

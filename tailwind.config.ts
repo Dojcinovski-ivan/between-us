@@ -77,10 +77,19 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(18px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // App-wide: used by the thread panel's entrance. translateX(100%)
+        // is relative to the element's own width, so this reads as "slides
+        // in from its own right edge" whether the panel is a 40% wide
+        // desktop column or a full width mobile screen.
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(100%)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         drift: "drift 18s ease-in-out infinite alternate",
         rise: "rise 1s var(--ease-calm) both",
+        "slide-in-right": "slide-in-right 250ms ease-out",
       },
     },
   },
