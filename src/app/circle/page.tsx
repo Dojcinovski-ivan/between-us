@@ -80,6 +80,7 @@ export default async function CirclePage() {
           : null
       }
       educationalContent={educationalContent}
+      dailyAdvice={null}
     />
   );
 }
