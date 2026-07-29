@@ -68,6 +68,7 @@ export function ReactionButtons({
     <div className="flex flex-wrap items-center gap-2">
       {REACTIONS.map((r) => {
         const isActive = reacted.has(r.type);
+        const isSpecial = r.type === "needed_this";
         return (
           <button
             key={r.type}
@@ -75,9 +76,13 @@ export function ReactionButtons({
             onClick={() => toggle(r.type)}
             disabled={pending === r.type}
             title={r.label}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors disabled:opacity-60 ${
+            className={`inline-flex items-center gap-1.5 rounded-full border transition-colors disabled:opacity-60 ${
+              isSpecial ? "px-3.5 py-2 text-sm" : "px-3 py-1.5 text-xs"
+            } ${
               isActive
-                ? "border-sage bg-sage-soft text-sage"
+                ? isSpecial
+                  ? "border-accent bg-accent-soft text-accent shadow-[0_0_10px_rgba(196,132,106,0.35)]"
+                  : "border-sage bg-sage-soft text-sage"
                 : "border-border text-muted hover:bg-surface2"
             }`}
           >

@@ -64,6 +64,18 @@ export function weeksSince(dateString: string, from: Date = new Date()): number 
   return Math.max(1, Math.floor(days / 7) + 1);
 }
 
+export type AnniversaryMilestone = "month" | "two_months" | null;
+
+// Exact day count rather than weeksSince()'s rounded week buckets, since
+// the milestone only fires within a narrow day window around 4 and 8
+// weeks in.
+export function anniversaryMilestone(createdAt: string, now: Date = new Date()): AnniversaryMilestone {
+  const days = Math.floor((now.getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  if (days >= 27 && days <= 29) return "month";
+  if (days >= 55 && days <= 57) return "two_months";
+  return null;
+}
+
 const FOUR_WEEKS_MS = 4 * 7 * 24 * 60 * 60 * 1000;
 
 export function isEligibleForCheckIn(joinedAt: string, lastCheckInAt: string | null, now: Date = new Date()): boolean {

@@ -15,6 +15,7 @@ type ComposerProps = {
   placeholder?: string;
   isPromptResponse?: boolean;
   onClearPromptResponse?: () => void;
+  prefill?: { text: string } | null;
   onSubmitted: (post: Post) => void;
   onCancel?: () => void;
   autoFocus?: boolean;
@@ -27,6 +28,7 @@ export function Composer({
   placeholder = "Share what's on your mind…",
   isPromptResponse = false,
   onClearPromptResponse,
+  prefill,
   onSubmitted,
   onCancel,
   autoFocus = false,
@@ -40,6 +42,18 @@ export function Composer({
   const formRef = useRef<HTMLFormElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Keyed on the prefill object's own identity (a new object is passed
+  // each time the parent wants to inject text), so this fires exactly
+  // once per prefill request rather than on every render.
+  useEffect(() => {
+    if (!prefill) return;
+    setContent(prefill.text.slice(0, MAX_LENGTH));
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill]);
 
   useEffect(() => {
     function handlePointerDown(e: MouseEvent | TouchEvent) {

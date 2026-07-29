@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { weeksSince, isEligibleForCheckIn } from "@/lib/time";
+import { weeksSince, isEligibleForCheckIn, anniversaryMilestone } from "@/lib/time";
 import { CircleFeed } from "./CircleFeed";
 import type { Post, ReactionRow } from "./types";
 
@@ -19,6 +19,7 @@ export default async function CirclePage() {
   const supabase = createClient();
   const today = new Date().toISOString().slice(0, 10);
   const weeksIn = weeksSince(profile.created_at);
+  const dayOfWeek = new Date().getDay();
 
   const [
     { data: circle },
@@ -27,6 +28,7 @@ export default async function CirclePage() {
     { data: reactions },
     { data: lastCheckIn },
     { data: educationalContent },
+    { data: question },
   ] = await Promise.all([
     supabase
       .from("circles")
@@ -61,11 +63,19 @@ export default async function CirclePage() {
       .eq("category", profile.category)
       .eq("week_number", weeksIn)
       .maybeSingle(),
+    supabase
+      .from("daily_questions")
+      .select("content")
+      .eq("category", profile.category)
+      .eq("day_of_week", dayOfWeek)
+      .maybeSingle(),
   ]);
 
   if (!circle) redirect("/onboarding");
 
   const checkInEligible = isEligibleForCheckIn(profile.created_at, lastCheckIn?.created_at ?? null);
+
+  const anniversary = anniversaryMilestone(profile.created_at);
 
   return (
     <CircleFeed
@@ -81,6 +91,9 @@ export default async function CirclePage() {
       }
       educationalContent={educationalContent}
       dailyAdvice={null}
+      dailyQuestion={(question as { content: string } | null)?.content ?? null}
+      hasIntroduced={profile.has_introduced}
+      anniversary={anniversary}
     />
   );
 }

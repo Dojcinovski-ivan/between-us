@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { categoryLabel } from "@/lib/categories";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
+import type { AnniversaryMilestone } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -15,6 +16,9 @@ import { ThreadPanel } from "./ThreadPanel";
 import { WeekSection } from "./WeekSection";
 import { CheckInPrompt } from "./CheckInPrompt";
 import { EducationalCard } from "./EducationalCard";
+import { DailyQuestionCard } from "./DailyQuestionCard";
+import { IntroductionCard } from "./IntroductionCard";
+import { AnniversaryBanner } from "./AnniversaryBanner";
 import type { Post, ReactionRow } from "./types";
 
 const MAIN_COMPOSER_ID = "composer-textarea";
@@ -34,6 +38,9 @@ export function CircleFeed({
   checkIn,
   educationalContent,
   dailyAdvice,
+  dailyQuestion,
+  hasIntroduced: initialHasIntroduced,
+  anniversary,
 }: {
   circle: Circle;
   prompt: Prompt;
@@ -43,6 +50,9 @@ export function CircleFeed({
   checkIn: CheckIn;
   educationalContent: EducationalContent;
   dailyAdvice: string | null;
+  dailyQuestion: string | null;
+  hasIntroduced: boolean;
+  anniversary: AnniversaryMilestone;
 }) {
   const supabase = createClient();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
@@ -51,6 +61,9 @@ export function CircleFeed({
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [composerPrefill, setComposerPrefill] = useState<{ text: string } | null>(null);
+  const [hasIntroduced, setHasIntroduced] = useState(initialHasIntroduced);
+  const [dismissedAnniversary, setDismissedAnniversary] = useState(false);
 
   // The page itself scrolls (there is no inner overflow container), so we
   // measure against the document. A small threshold counts "close enough"
@@ -184,7 +197,7 @@ export function CircleFeed({
         acc[r.type] = (acc[r.type] ?? 0) + 1;
         return acc;
       },
-      { hear_you: 0, me_too: 0, not_alone: 0 } as Record<ReactionType, number>,
+      { hear_you: 0, me_too: 0, not_alone: 0, needed_this: 0 } as Record<ReactionType, number>,
     );
     return { reactedTypes, counts };
   }
@@ -229,6 +242,44 @@ export function CircleFeed({
     const el = document.getElementById(MAIN_COMPOSER_ID);
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     (el as HTMLTextAreaElement | null)?.focus();
+  }
+
+  function scrollToComposer() {
+    document.getElementById(MAIN_COMPOSER_ID)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function handleRespondToQuestion() {
+    if (!dailyQuestion) return;
+    setComposerPrefill({ text: `Reflecting on today's question, "${dailyQuestion}"\n\n` });
+    scrollToComposer();
+  }
+
+  async function markIntroduced() {
+    setHasIntroduced(true);
+    await supabase.from("users").update({ has_introduced: true }).eq("id", currentUser.id);
+  }
+
+  function handleIntroduceMyself() {
+    setComposerPrefill({ text: "Hi, I just joined this circle. " });
+    scrollToComposer();
+    markIntroduced();
+  }
+
+  // The anniversary window (defined server side against created_at) can
+  // stay open for a couple of days, so the dismissal itself is what needs
+  // to persist across visits, not the window check. localStorage rather
+  // than a DB column, since the user asked for it to never touch the
+  // database.
+  useEffect(() => {
+    if (!anniversary) return;
+    const key = `anniversary-dismissed-${anniversary}-${currentUser.id}`;
+    if (localStorage.getItem(key) === "1") setDismissedAnniversary(true);
+  }, [anniversary, currentUser.id]);
+
+  function dismissAnniversary() {
+    if (!anniversary) return;
+    localStorage.setItem(`anniversary-dismissed-${anniversary}-${currentUser.id}`, "1");
+    setDismissedAnniversary(true);
   }
 
   const { thisWeek, previousWeeks } = useMemo(() => {
@@ -318,10 +369,21 @@ export function CircleFeed({
           </div>
         )}
 
-        <div className="px-4 pb-3 sm:px-6">
+        <div className="flex flex-col gap-2 px-4 pb-3 sm:px-6">
           <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} />
+          {dailyQuestion && (
+            <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
+          )}
         </div>
       </div>
+
+      {!hasIntroduced && (
+        <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
+      )}
+
+      {anniversary && !dismissedAnniversary && (
+        <AnniversaryBanner milestone={anniversary} onDismiss={dismissAnniversary} />
+      )}
 
       {checkIn && (
         <CheckInPrompt
@@ -399,7 +461,11 @@ export function CircleFeed({
             textareaId={MAIN_COMPOSER_ID}
             isPromptResponse={isPromptResponse}
             onClearPromptResponse={() => setIsPromptResponse(false)}
-            onSubmitted={handleTopLevelPosted}
+            prefill={composerPrefill}
+            onSubmitted={(post) => {
+              setComposerPrefill(null);
+              handleTopLevelPosted(post);
+            }}
           />
         </div>
       </div>
@@ -421,6 +487,7 @@ export function CircleFeed({
             replies={repliesFor(activeThreadPost.id)}
             circleId={circle.id}
             currentUserId={currentUser.id}
+            reactionsFor={reactionsFor}
             onClose={closeThread}
             onDeleted={handleDeleted}
             onReplyPosted={handleReplyPosted}

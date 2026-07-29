@@ -2,9 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { timeAgo } from "@/lib/time";
+import type { ReactionType } from "@/lib/reactions";
 import type { Post } from "./types";
 import { PostMenu } from "./PostMenu";
 import { Composer } from "./Composer";
+import { ReactionButtons } from "./ReactionButtons";
+
+type ReactionData = { reactedTypes: ReactionType[]; counts: Record<ReactionType, number> };
 
 function BackArrowIcon() {
   return (
@@ -47,13 +51,16 @@ function CloseIcon() {
 function ThreadReplyRow({
   reply,
   currentUserId,
+  reactionsFor,
   onDeleted,
 }: {
   reply: Post;
   currentUserId: string;
+  reactionsFor: (postId: string) => ReactionData;
   onDeleted: (postId: string) => void;
 }) {
   const isOwn = reply.user_id === currentUserId;
+  const { reactedTypes, counts } = reactionsFor(reply.id);
   return (
     <div className="flex flex-col items-start">
       <div className="flex items-center gap-2 text-xs text-muted">
@@ -62,6 +69,14 @@ function ThreadReplyRow({
         <PostMenu postId={reply.id} isOwnPost={isOwn} replyCount={0} onDeleted={() => onDeleted(reply.id)} />
       </div>
       <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{reply.content}</p>
+      <div className="mt-2">
+        <ReactionButtons
+          postId={reply.id}
+          isOwnPost={isOwn}
+          initialReactedTypes={reactedTypes}
+          initialCounts={counts}
+        />
+      </div>
     </div>
   );
 }
@@ -71,6 +86,7 @@ export function ThreadPanel({
   replies,
   circleId,
   currentUserId,
+  reactionsFor,
   onClose,
   onDeleted,
   onReplyPosted,
@@ -79,6 +95,7 @@ export function ThreadPanel({
   replies: Post[];
   circleId: string;
   currentUserId: string;
+  reactionsFor: (postId: string) => ReactionData;
   onClose: () => void;
   onDeleted: (postId: string) => void;
   onReplyPosted: (reply: Post) => void;
@@ -143,6 +160,7 @@ export function ThreadPanel({
                 key={reply.id}
                 reply={reply}
                 currentUserId={currentUserId}
+                reactionsFor={reactionsFor}
                 onDeleted={onDeleted}
               />
             ))
