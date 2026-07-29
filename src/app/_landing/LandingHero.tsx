@@ -43,7 +43,7 @@ export function LandingHero() {
           </Link>
           <a
             href="#how"
-            className="rounded-full border border-border bg-[rgba(255,255,255,0.6)] px-7 py-3.5 font-medium text-ink backdrop-blur-md transition-transform duration-300 ease-calm hover:-translate-y-0.5"
+            className="rounded-full border border-border bg-white px-7 py-3.5 font-medium text-ink shadow-soft transition-transform duration-300 ease-calm hover:-translate-y-0.5"
           >
             Learn how it works
           </a>
