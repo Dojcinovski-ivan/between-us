@@ -7,7 +7,7 @@ export function LandingHero() {
       <div className="absolute inset-0 -z-10">
         <Image
           src="/landing/hero.png"
-          alt="An illustrated small group sitting together on a hilltop, looking out over rolling hills toward a sunset"
+          alt="An illustrated desert landscape at sunset with several small groups sitting together on the dunes"
           fill
           priority
           sizes="100vw"
