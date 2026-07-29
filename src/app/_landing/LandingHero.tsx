@@ -7,13 +7,13 @@ export function LandingHero() {
       <div className="absolute inset-0 -z-10">
         <Image
           src="/landing/hero.png"
-          alt="An illustrated desert landscape at sunset with several small groups sitting together on the dunes"
+          alt="A soft, pale illustrated desert landscape at sunrise with several small groups sitting together on the dunes"
           fill
           priority
           sizes="100vw"
           className="animate-drift object-cover"
         />
-        <div className="absolute inset-0 bg-[rgba(247,243,238,0.3)]" />
+        <div className="absolute inset-0 bg-[rgba(247,243,238,0.18)]" />
         <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-bg" />
       </div>
 
