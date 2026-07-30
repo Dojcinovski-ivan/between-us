@@ -407,21 +407,32 @@ export function CircleFeed({
           </div>
         )}
 
-        <div className="flex flex-col gap-2 px-4 pb-3 sm:px-6">
+        <div className="px-4 pb-3 sm:px-6">
           <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} isNew={isNewPrompt} />
-          {dailyQuestion && (
-            <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
-          )}
-          {rhythm && (
-            <RhythmCard
-              accent={rhythm.accent}
-              label={rhythm.label}
-              content={rhythm.content}
-              onRespond={handleRespondToRhythm}
-            />
-          )}
         </div>
       </div>
+
+      {/* The Thursday/Friday rhythm card and the daily question both play
+          the same "something lighter for today" role, so only one ever
+          shows rather than stacking both. Lives outside the sticky block
+          above, so it scrolls away with the rest of the feed instead of
+          permanently sitting above the messages. */}
+      {rhythm ? (
+        <div className="mb-6">
+          <RhythmCard
+            accent={rhythm.accent}
+            label={rhythm.label}
+            content={rhythm.content}
+            onRespond={handleRespondToRhythm}
+          />
+        </div>
+      ) : (
+        dailyQuestion && (
+          <div className="mb-6">
+            <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
+          </div>
+        )
+      )}
 
       {!hasIntroduced && (
         <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
