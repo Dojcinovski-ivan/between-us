@@ -69,6 +69,12 @@ const CIRCLE_NAMES: Record<string, string> = {
   loving_an_addict: "Loving Someone Who Is Struggling Circle",
   abusive_narcissistic_relationship: "Finding My Way Back Circle",
   something_else: "The One Who Held It Together Circle",
+  // Retired onboarding slugs, no longer selectable by new members (see
+  // isValidCategory) but still in use by circles created before the
+  // taxonomy above replaced them. Kept warm and content seeded rather
+  // than left to fall back to a humanized slug.
+  narcissistic_parent: "When It Was Never About You Circle",
+  addiction_impact: "When Addiction Touched My Life Circle",
 };
 
 export function circleName(slug: string): string {
