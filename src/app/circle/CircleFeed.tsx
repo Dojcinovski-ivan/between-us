@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { categoryLabel } from "@/lib/categories";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
 import type { AnniversaryMilestone } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
@@ -19,21 +18,28 @@ import { EducationalCard } from "./EducationalCard";
 import { DailyQuestionCard } from "./DailyQuestionCard";
 import { IntroductionCard } from "./IntroductionCard";
 import { AnniversaryBanner } from "./AnniversaryBanner";
+import { RhythmCard } from "./RhythmCard";
 import type { Post, ReactionRow } from "./types";
 
 const MAIN_COMPOSER_ID = "composer-textarea";
 
 type Circle = { id: string; category: string; member_count: number };
 type Prompt = { id: string; content: string } | null;
-type CurrentUser = { id: string; username: string };
+type CurrentUser = { id: string; username: string; current_stage: string };
 type CheckIn = { weeksIn: number; currentStage: string } | null;
 type EducationalContent = { title: string; content: string } | null;
+type Rhythm = { accent: "sage" | "terracotta"; label: string; content: string } | null;
+type ReadRow = { post_id: string; user_id: string };
 
 export function CircleFeed({
   circle,
+  circleDisplayName,
   prompt,
+  isNewPrompt,
+  rhythm,
   initialPosts,
   initialReactions,
+  initialReads,
   currentUser,
   checkIn,
   educationalContent,
@@ -43,9 +49,13 @@ export function CircleFeed({
   anniversary,
 }: {
   circle: Circle;
+  circleDisplayName: string;
   prompt: Prompt;
+  isNewPrompt: boolean;
+  rhythm: Rhythm;
   initialPosts: Post[];
   initialReactions: ReactionRow[];
+  initialReads: ReadRow[];
   currentUser: CurrentUser;
   checkIn: CheckIn;
   educationalContent: EducationalContent;
@@ -57,6 +67,7 @@ export function CircleFeed({
   const supabase = createClient();
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [reactions] = useState<ReactionRow[]>(initialReactions);
+  const [reads, setReads] = useState<ReadRow[]>(initialReads);
   const [isPromptResponse, setIsPromptResponse] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
@@ -140,17 +151,20 @@ export function CircleFeed({
         async (payload) => {
           const row = payload.new as Omit<Post, "users">;
           let username: string;
+          let currentStage: string;
           if (row.user_id === currentUser.id) {
             username = currentUser.username;
+            currentStage = currentUser.current_stage;
           } else {
             const { data } = await supabase
               .from("users")
-              .select("username")
+              .select("username, current_stage")
               .eq("id", row.user_id)
               .maybeSingle();
             username = data?.username ?? "someone";
+            currentStage = data?.current_stage ?? "finding_footing";
           }
-          const post: Post = { ...row, users: { username } };
+          const post: Post = { ...row, users: { username, current_stage: currentStage } };
           // Capture the reader's position before the new post grows the
           // document. Your own posts are followed to the bottom by the
           // submit handlers, so here we only react to other members.
@@ -202,6 +216,26 @@ export function CircleFeed({
     return { reactedTypes, counts };
   }
 
+  function readsFor(postId: string) {
+    const rows = reads.filter((r) => r.post_id === postId);
+    return {
+      count: rows.length,
+      alreadyRead: rows.some((r) => r.user_id === currentUser.id),
+    };
+  }
+
+  // Fire and forget: the count only matters to the post's author, and
+  // only on their next load (no realtime here), so there is nothing to
+  // wait on locally beyond not re-recording the same post twice.
+  async function recordRead(postId: string) {
+    setReads((prev) =>
+      prev.some((r) => r.post_id === postId && r.user_id === currentUser.id)
+        ? prev
+        : [...prev, { post_id: postId, user_id: currentUser.id }],
+    );
+    await supabase.from("post_reads").insert({ post_id: postId, user_id: currentUser.id });
+  }
+
   function handleDeleted(postId: string) {
     setPosts((prev) => prev.filter((p) => p.id !== postId && p.parent_id !== postId));
   }
@@ -251,6 +285,12 @@ export function CircleFeed({
   function handleRespondToQuestion() {
     if (!dailyQuestion) return;
     setComposerPrefill({ text: `Reflecting on today's question, "${dailyQuestion}"\n\n` });
+    scrollToComposer();
+  }
+
+  function handleRespondToRhythm() {
+    if (!rhythm) return;
+    setComposerPrefill({ text: `${rhythm.label}, "${rhythm.content}"\n\n` });
     scrollToComposer();
   }
 
@@ -339,9 +379,7 @@ export function CircleFeed({
       <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-bg sm:-mx-6">
         <header className="flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 sm:px-6">
           <div>
-            <h1 className="text-lg font-semibold text-ink">
-              {categoryLabel(circle.category)} Circle
-            </h1>
+            <h1 className="text-lg font-semibold text-ink">{circleDisplayName}</h1>
             <p className="text-xs text-muted">
               {circle.member_count} {circle.member_count === 1 ? "member" : "members"}
             </p>
@@ -370,9 +408,17 @@ export function CircleFeed({
         )}
 
         <div className="flex flex-col gap-2 px-4 pb-3 sm:px-6">
-          <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} />
+          <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} isNew={isNewPrompt} />
           {dailyQuestion && (
             <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
+          )}
+          {rhythm && (
+            <RhythmCard
+              accent={rhythm.accent}
+              label={rhythm.label}
+              content={rhythm.content}
+              onRespond={handleRespondToRhythm}
+            />
           )}
         </div>
       </div>
@@ -411,6 +457,8 @@ export function CircleFeed({
                       currentUserId={currentUser.id}
                       replyCount={repliesFor(post.id).length}
                       reactionsFor={reactionsFor}
+                      readsFor={readsFor}
+                      onRead={recordRead}
                       onDeleted={handleDeleted}
                       onOpenThread={openThread}
                     />
@@ -436,6 +484,8 @@ export function CircleFeed({
                   currentUserId={currentUser.id}
                   replyCount={repliesFor(post.id).length}
                   reactionsFor={reactionsFor}
+                  readsFor={readsFor}
+                  onRead={recordRead}
                   onDeleted={handleDeleted}
                   onOpenThread={openThread}
                 />
@@ -486,6 +536,7 @@ export function CircleFeed({
             parent={activeThreadPost}
             replies={repliesFor(activeThreadPost.id)}
             circleId={circle.id}
+            circleDisplayName={circleDisplayName}
             currentUserId={currentUser.id}
             reactionsFor={reactionsFor}
             onClose={closeThread}

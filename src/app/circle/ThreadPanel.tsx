@@ -7,6 +7,7 @@ import type { Post } from "./types";
 import { PostMenu } from "./PostMenu";
 import { Composer } from "./Composer";
 import { ReactionButtons } from "./ReactionButtons";
+import { StageDot } from "./StageDot";
 
 type ReactionData = { reactedTypes: ReactionType[]; counts: Record<ReactionType, number> };
 
@@ -64,6 +65,7 @@ function ThreadReplyRow({
   return (
     <div className="flex flex-col items-start">
       <div className="flex items-center gap-2 text-xs text-muted">
+        {reply.users && <StageDot stage={reply.users.current_stage} />}
         <span className="font-medium text-ink">{isOwn ? "You" : (reply.users?.username ?? "someone")}</span>
         <span className="text-faint">{timeAgo(reply.created_at)}</span>
         <PostMenu postId={reply.id} isOwnPost={isOwn} replyCount={0} onDeleted={() => onDeleted(reply.id)} />
@@ -85,6 +87,7 @@ export function ThreadPanel({
   parent,
   replies,
   circleId,
+  circleDisplayName,
   currentUserId,
   reactionsFor,
   onClose,
@@ -94,6 +97,7 @@ export function ThreadPanel({
   parent: Post;
   replies: Post[];
   circleId: string;
+  circleDisplayName: string;
   currentUserId: string;
   reactionsFor: (postId: string) => ReactionData;
   onClose: () => void;
@@ -125,7 +129,10 @@ export function ThreadPanel({
         >
           <BackArrowIcon />
         </button>
-        <h2 className="flex-1 text-sm font-semibold text-ink">Thread</h2>
+        <div className="flex-1">
+          <h2 className="text-sm font-semibold text-ink">Thread</h2>
+          <p className="text-xs text-muted">{circleDisplayName}</p>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -145,6 +152,7 @@ export function ThreadPanel({
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-52 pt-4">
         <div className="rounded-r-lg border-l-2 border-accent bg-surface2 py-2 pl-3">
           <div className="flex items-center gap-2 text-xs text-muted">
+            {parent.users && <StageDot stage={parent.users.current_stage} />}
             <span className="font-medium text-ink">{isOwnParent ? "You" : (parent.users?.username ?? "someone")}</span>
             <span className="text-faint">{timeAgo(parent.created_at)}</span>
           </div>

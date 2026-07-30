@@ -8,6 +8,16 @@ import type { Post } from "./types";
 
 const MAX_LENGTH = 1000;
 
+// Rotates each time the composer mounts, so the empty state feels a
+// little alive without being distracting once someone starts typing.
+const PLACEHOLDERS = [
+  "Share what is on your mind today…",
+  "How are you feeling right now?",
+  "What brought you here today?",
+  "Something you have been carrying…",
+  "You are safe here. Share whatever feels right.",
+];
+
 type ComposerProps = {
   circleId: string;
   parentId: string | null;
@@ -25,7 +35,7 @@ export function Composer({
   circleId,
   parentId,
   textareaId,
-  placeholder = "Share what's on your mind…",
+  placeholder,
   isPromptResponse = false,
   onClearPromptResponse,
   prefill,
@@ -38,10 +48,25 @@ export function Composer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  // Picked once per mount (a plain default parameter would re-roll on
+  // every keystroke, since that re-renders the component), so the
+  // placeholder stays put while someone is looking at it.
+  const [randomPlaceholder] = useState(
+    () => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)],
+  );
+  const effectivePlaceholder = placeholder ?? randomPlaceholder;
 
   const formRef = useRef<HTMLFormElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!showToast) return;
+    const timer = setTimeout(() => setShowToast(false), 2000);
+    return () => clearTimeout(timer);
+  }, [showToast]);
 
   // Keyed on the prefill object's own identity (a new object is passed
   // each time the parent wants to inject text), so this fires exactly
@@ -98,7 +123,7 @@ export function Composer({
         parent_id: parentId,
         is_prompt_response: isPromptResponse,
       })
-      .select("*, users(username)")
+      .select("*, users(username, current_stage)")
       .single();
 
     setIsSubmitting(false);
@@ -109,6 +134,7 @@ export function Composer({
     }
 
     setContent("");
+    setShowToast(true);
     onClearPromptResponse?.();
     onSubmitted(data as Post);
   }
@@ -142,7 +168,17 @@ export function Composer({
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-2">
+    <form ref={formRef} onSubmit={handleSubmit} className="relative flex flex-col gap-2">
+      <div
+        className={`pointer-events-none absolute inset-x-0 -top-9 flex justify-center transition-opacity duration-300 ${
+          showToast ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <span className="rounded-full bg-sage px-3 py-1 text-xs font-medium text-accent-text shadow-soft">
+          Shared with your circle
+        </span>
+      </div>
+
       {isPromptResponse && (
         <div className="flex w-fit items-center gap-2 rounded-full bg-sage-soft px-3 py-1 text-xs text-sage">
           Responding to this week&apos;s prompt
@@ -178,7 +214,7 @@ export function Composer({
           value={content}
           onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           rows={parentId ? 2 : 3}
           autoFocus={autoFocus}
           className="w-full flex-1 resize-none rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
@@ -224,6 +260,8 @@ export function Composer({
       </div>
 
       {error && <p className="text-xs text-warn">{error}</p>}
+
+      <p className="text-[11px] text-faint">Your message is private to your circle.</p>
     </form>
   );
 }

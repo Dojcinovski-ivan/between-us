@@ -12,6 +12,21 @@ const STAGE_LABELS: Record<string, string> = {
   thriving: "Thriving",
 };
 
+// A quiet colored dot per stage, shown next to a member's username.
+// Deliberately not tied to the app's existing sage/accent tokens, since
+// this needs its own small progression of its own: grey, sage, gold,
+// deep terracotta.
+const STAGE_COLORS: Record<string, string> = {
+  finding_footing: "#a8a29e",
+  building_strength: "#8fa68e",
+  steadier_ground: "#c9a24b",
+  thriving: "#9a4a30",
+};
+
+export function stageColor(slug: string): string {
+  return STAGE_COLORS[slug] ?? STAGE_COLORS.finding_footing;
+}
+
 export function stageLabel(slug: string): string {
   if (STAGE_LABELS[slug]) return STAGE_LABELS[slug];
   return slug

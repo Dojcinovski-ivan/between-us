@@ -76,6 +76,13 @@ export function anniversaryMilestone(createdAt: string, now: Date = new Date()):
   return null;
 }
 
+// A plain, globally consistent week counter (not tied to any user's
+// join date), used to rotate through a fixed pool of seeded content one
+// item per real calendar week.
+export function absoluteWeekNumber(date: Date = new Date()): number {
+  return Math.floor(date.getTime() / (7 * 24 * 60 * 60 * 1000));
+}
+
 const FOUR_WEEKS_MS = 4 * 7 * 24 * 60 * 60 * 1000;
 
 export function isEligibleForCheckIn(joinedAt: string, lastCheckInAt: string | null, now: Date = new Date()): boolean {

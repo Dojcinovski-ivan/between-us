@@ -56,3 +56,21 @@ function humanizeSlug(slug: string): string {
 export function categoryLabel(slug: string): string {
   return CATEGORIES.find((c) => c.slug === slug)?.label ?? humanizeSlug(slug);
 }
+
+// Warm, human circle names, used anywhere the circle's identity is
+// shown (feed header, thread panel, page title, meta tags) rather than
+// the plainer descriptive label above, which stays for onboarding and
+// admin screens where clarity about the category matters more.
+const CIRCLE_NAMES: Record<string, string> = {
+  gambling_addict_parent: "Growing Up Circle",
+  substance_addicted_parent: "Growing Up Circle",
+  abusive_parent: "When Home Didn't Feel Safe Circle",
+  emotionally_unavailable_parent: "When It Was Never Said Out Loud Circle",
+  loving_an_addict: "Loving Someone Who Is Struggling Circle",
+  abusive_narcissistic_relationship: "Finding My Way Back Circle",
+  something_else: "The One Who Held It Together Circle",
+};
+
+export function circleName(slug: string): string {
+  return CIRCLE_NAMES[slug] ?? `${humanizeSlug(slug)} Circle`;
+}

@@ -29,9 +29,11 @@ function ChevronIcon({ className = "" }: { className?: string }) {
 export function PromptCard({
   prompt,
   onRespond,
+  isNew = false,
 }: {
   prompt: Prompt | null;
   onRespond: () => void;
+  isNew?: boolean;
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [manuallyExpanded, setManuallyExpanded] = useState(false);
@@ -89,9 +91,16 @@ export function PromptCard({
         <div className="overflow-hidden">
           <div className={isScrolled ? "px-4 pb-4" : "p-5"}>
             {!isScrolled && (
-              <p className="text-xs font-medium uppercase tracking-wide text-sage">
-                This week&apos;s prompt
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-sage">
+                  This week&apos;s prompt
+                </p>
+                {isNew && (
+                  <span className="rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium text-accent-text">
+                    New this week
+                  </span>
+                )}
+              </div>
             )}
             <p className={`leading-relaxed text-ink ${isScrolled ? "mt-1 text-sm" : "mt-2 text-base"}`}>
               {prompt.content}
