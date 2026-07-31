@@ -8,7 +8,7 @@ import { Testimonial } from "./_landing/Testimonial";
 import { FAQ } from "./_landing/FAQ";
 import { FinalCTA } from "./_landing/FinalCTA";
 import { LandingFooter } from "./_landing/LandingFooter";
-import { fraunces, karla } from "./_landing/fonts";
+import { fraunces, karla } from "@/lib/fonts";
 
 export const metadata = {
   title: "Between Us: Anonymous peer support for healing",

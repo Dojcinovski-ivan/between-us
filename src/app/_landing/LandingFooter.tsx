@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoMark } from "./LogoMark";
+import { SocialIcons } from "./SocialIcons";
 
 export function LandingFooter() {
   return (
@@ -38,7 +39,10 @@ export function LandingFooter() {
           <Link href="/login" className="hover:text-ink">
             Log in
           </Link>
-          <span className="sm:ml-auto">© {new Date().getFullYear()} Between Us</span>
+          <div className="flex items-center gap-4 sm:ml-auto">
+            <span>© {new Date().getFullYear()} Between Us</span>
+            <SocialIcons />
+          </div>
         </div>
       </div>
     </footer>

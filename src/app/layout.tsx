@@ -16,7 +16,9 @@ export default async function RootLayout({
 }>) {
   const { profile } = await getCurrentUserAndProfile();
   const pathname = headers().get("x-pathname") ?? "";
-  const isLandingPage = pathname === "/";
+  // The landing page and the blog are the app's warm, editorial,
+  // always-light sections — everywhere else respects the user's theme.
+  const isAlwaysLightPage = pathname === "/" || pathname === "/blog" || pathname.startsWith("/blog/");
 
   return (
     <html lang="en">
@@ -32,7 +34,7 @@ export default async function RootLayout({
       </head>
       <body className="antialiased">
         <div
-          className={`flex min-h-screen flex-col bg-bg font-sans text-ink ${isLandingPage ? "force-light" : ""}`}
+          className={`flex min-h-screen flex-col bg-bg font-sans text-ink ${isAlwaysLightPage ? "force-light" : ""}`}
         >
           <div className="flex-1">{children}</div>
           <CrisisBanner country={profile?.country ?? null} />
