@@ -3,22 +3,24 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isValidCategory } from "@/lib/categories";
+import { FELT_EXPERIENCES } from "@/lib/feltExperience";
+import { WHO_WAS_IT } from "@/lib/whoWasIt";
+import { MECHANISMS } from "@/lib/mechanisms";
 import { JOURNEY_STAGES } from "@/lib/journeyStages";
-import { FEELINGS } from "@/lib/feelings";
 import { AGE_RANGES } from "@/lib/ageRanges";
 import { GENDERS } from "@/lib/genders";
 import { COUNTRIES } from "@/lib/countries";
+import { derivePodCategory } from "@/lib/matchPod";
 import { matchCircle } from "@/lib/matchCircle";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
 type OnboardingInput = {
   username: string;
-  category: string;
-  categoryOtherText: string;
+  feltExperience: string;
+  whoWasIt: string;
+  mechanisms: string[];
   journeyStage: string;
-  feeling: string;
   ageRange: string;
   gender: string;
   country: string;
@@ -35,22 +37,23 @@ export async function completeOnboarding(input: OnboardingInput) {
   }
 
   const username = input.username.trim();
-  const categoryOtherText = input.categoryOtherText.trim();
 
   if (!USERNAME_PATTERN.test(username)) {
     return { error: "Usernames are 3-20 characters: letters, numbers, and underscores only." };
   }
-  if (!isValidCategory(input.category)) {
-    return { error: "Please choose what brought you here." };
+  const feltExperience = FELT_EXPERIENCES.find((f) => f.slug === input.feltExperience);
+  if (!feltExperience) {
+    return { error: "Please choose the option closest to where you are right now." };
   }
-  if (input.category === "something_else" && !categoryOtherText) {
-    return { error: "Tell us a little about what brought you here." };
+  const whoWasIt = WHO_WAS_IT.find((w) => w.slug === input.whoWasIt);
+  if (!whoWasIt) {
+    return { error: "Please choose who this is mostly about." };
+  }
+  if (input.mechanisms.length === 0 || !input.mechanisms.every((m) => MECHANISMS.some((k) => k.slug === m))) {
+    return { error: "Please choose everything that fits." };
   }
   if (!JOURNEY_STAGES.some((s) => s.slug === input.journeyStage)) {
     return { error: "Please choose how long you've been carrying this." };
-  }
-  if (!FEELINGS.some((f) => f.slug === input.feeling)) {
-    return { error: "Please choose how you're feeling right now." };
   }
   if (!AGE_RANGES.some((a) => a.slug === input.ageRange)) {
     return { error: "Please choose your age range." };
@@ -62,8 +65,14 @@ export async function completeOnboarding(input: OnboardingInput) {
     return { error: "Please choose your country." };
   }
 
+  const category = derivePodCategory({
+    feltExperience: feltExperience.slug,
+    whoWasIt: whoWasIt.slug,
+    mechanisms: input.mechanisms as (typeof MECHANISMS)[number]["slug"][],
+  });
+
   const circleId = await matchCircle({
-    category: input.category,
+    category,
     ageRange: input.ageRange,
     gender: input.gender,
   }).catch(() => null);
@@ -76,11 +85,12 @@ export async function completeOnboarding(input: OnboardingInput) {
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
     username,
-    category: input.category,
-    bio: input.category === "something_else" ? categoryOtherText : null,
+    category,
     circle_id: circleId,
+    felt_experience: feltExperience.slug,
+    who_was_it: whoWasIt.slug,
+    mechanisms: input.mechanisms,
     journey_stage: input.journeyStage,
-    current_feeling: input.feeling,
     age_range: input.ageRange,
     gender: input.gender,
     country: input.country,

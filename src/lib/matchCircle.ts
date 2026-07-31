@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const MAX_CIRCLE_SIZE = 15;
+const MAX_CIRCLE_SIZE = 10;
 
 type MatchInput = {
   category: string;

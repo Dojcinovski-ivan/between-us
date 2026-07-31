@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { CATEGORIES, type CategorySlug } from "@/lib/categories";
+import { FELT_EXPERIENCES, type FeltExperienceSlug } from "@/lib/feltExperience";
+import { WHO_WAS_IT, type WhoWasItSlug } from "@/lib/whoWasIt";
+import { MECHANISMS, type MechanismSlug } from "@/lib/mechanisms";
 import { JOURNEY_STAGES } from "@/lib/journeyStages";
-import { FEELINGS } from "@/lib/feelings";
 import { AGE_RANGES } from "@/lib/ageRanges";
 import { GENDERS } from "@/lib/genders";
 import { COUNTRIES } from "@/lib/countries";
@@ -17,10 +18,10 @@ import { completeOnboarding } from "./actions";
 
 export function OnboardingWizard() {
   const [step, setStep] = useState(0);
-  const [category, setCategory] = useState<CategorySlug | null>(null);
-  const [categoryOtherText, setCategoryOtherText] = useState("");
+  const [feltExperience, setFeltExperience] = useState<FeltExperienceSlug | null>(null);
+  const [whoWasIt, setWhoWasIt] = useState<WhoWasItSlug | null>(null);
+  const [mechanisms, setMechanisms] = useState<MechanismSlug[]>([]);
   const [journeyStage, setJourneyStage] = useState<string | null>(null);
-  const [feeling, setFeeling] = useState<string | null>(null);
   const [ageRange, setAgeRange] = useState<string | null>(null);
   const [gender, setGender] = useState<string | null>(null);
   const [country, setCountry] = useState("");
@@ -38,15 +39,23 @@ export function OnboardingWizard() {
     setStep((s) => s + 1);
   }
 
+  function toggleMechanism(slug: MechanismSlug) {
+    setMechanisms((prev) =>
+      prev.includes(slug) ? prev.filter((m) => m !== slug) : [...prev, slug],
+    );
+  }
+
   function handleSubmit() {
-    if (!category || !journeyStage || !feeling || !ageRange || !gender || !country) return;
+    if (!feltExperience || !whoWasIt || mechanisms.length === 0 || !journeyStage || !ageRange || !gender || !country) {
+      return;
+    }
     setError(null);
     startTransition(async () => {
       const result = await completeOnboarding({
-        category,
-        categoryOtherText: category === "something_else" ? categoryOtherText : "",
+        feltExperience,
+        whoWasIt,
+        mechanisms,
         journeyStage,
-        feeling,
         ageRange,
         gender,
         country,
@@ -62,72 +71,92 @@ export function OnboardingWizard() {
   if (step === 0) {
     return (
       <Card className="text-center">
-        <h1 className="text-2xl font-semibold text-ink">You&apos;re in the right place.</h1>
+        <h1 className="text-2xl font-semibold text-ink">You are in the right place.</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          We want to make sure you find the right circle — people who truly
-          understand what you&apos;ve been through. We&apos;ll ask you a few
-          gentle questions. Take your time.
+          We want to make sure you find the right circle. We will ask you a
+          few gentle questions. There are no wrong answers. Take your time.
         </p>
         <Button onClick={() => setStep(1)} className="mt-6 w-full">
-          Let&apos;s begin →
+          I am ready
         </Button>
       </Card>
     );
   }
 
-  // Screen 1 — category
+  // Screen 1 — felt experience
   if (step === 1) {
     return (
       <QuestionScreen
         step={1}
-        heading="What brought you here?"
-        subtext="Choose the one that feels closest to your experience."
-        warmNote="There are no wrong answers. This helps us find people who understand."
+        heading="Which of these feels closest to where you are right now?"
+        subtext="Choose the one that resonates most. You can always explore more later."
+        warmNote="Whatever you choose, you will find understanding here."
         onBack={goBack}
       >
-        {CATEGORIES.map((c) => (
+        {FELT_EXPERIENCES.map((f) => (
           <OptionCard
-            key={c.slug}
-            label={c.label}
-            selected={category === c.slug}
-            onClick={() => {
-              if (c.slug === "something_else") {
-                setCategory(c.slug);
-              } else {
-                selectAndAdvance(setCategory, c.slug);
-              }
-            }}
+            key={f.slug}
+            label={f.label}
+            selected={feltExperience === f.slug}
+            onClick={() => selectAndAdvance(setFeltExperience, f.slug)}
           />
         ))}
-
-        {category === "something_else" && (
-          <div className="mt-1 flex flex-col gap-3">
-            <textarea
-              value={categoryOtherText}
-              onChange={(e) => setCategoryOtherText(e.target.value)}
-              rows={3}
-              autoFocus
-              placeholder="Tell us a little about what brought you here."
-              className="resize-none rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-            <Button
-              onClick={() => setStep(2)}
-              disabled={!categoryOtherText.trim()}
-              className="w-full"
-            >
-              Continue
-            </Button>
-          </div>
-        )}
       </QuestionScreen>
     );
   }
 
-  // Screen 2 — journey stage
+  // Screen 2 — who was it
   if (step === 2) {
     return (
       <QuestionScreen
         step={2}
+        heading="Who is this mostly about?"
+        subtext="This helps us find people who truly understand your experience."
+        warmNote="There is no right answer. Just what feels truest."
+        onBack={goBack}
+      >
+        {WHO_WAS_IT.map((w) => (
+          <OptionCard
+            key={w.slug}
+            label={w.label}
+            selected={whoWasIt === w.slug}
+            onClick={() => selectAndAdvance(setWhoWasIt, w.slug)}
+          />
+        ))}
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 3 — mechanisms (multi select)
+  if (step === 3) {
+    return (
+      <QuestionScreen
+        step={3}
+        heading="What was it like? Choose everything that fits."
+        subtext="You can select more than one."
+        warmNote="Your experience is valid whatever it looked like."
+        onBack={goBack}
+      >
+        {MECHANISMS.map((m) => (
+          <OptionCard
+            key={m.slug}
+            label={m.label}
+            selected={mechanisms.includes(m.slug)}
+            onClick={() => toggleMechanism(m.slug)}
+          />
+        ))}
+        <Button onClick={() => setStep(4)} disabled={mechanisms.length === 0} className="mt-1 w-full">
+          Continue
+        </Button>
+      </QuestionScreen>
+    );
+  }
+
+  // Screen 4 — how long
+  if (step === 4) {
+    return (
+      <QuestionScreen
+        step={4}
         heading="How long have you been carrying this?"
         subtext="This helps us connect you with people at a similar point in their journey."
         warmNote="Wherever you are is exactly where you need to be."
@@ -145,36 +174,13 @@ export function OnboardingWizard() {
     );
   }
 
-  // Screen 3 — current feeling
-  if (step === 3) {
+  // Screen 5 — age range
+  if (step === 5) {
     return (
       <QuestionScreen
-        step={3}
-        heading="How are you feeling right now?"
-        subtext="Be honest — this is just between us."
-        warmNote="There's no right answer. We just want to understand where you are today."
-        onBack={goBack}
-      >
-        {FEELINGS.map((f) => (
-          <OptionCard
-            key={f.slug}
-            label={f.label}
-            selected={feeling === f.slug}
-            onClick={() => selectAndAdvance(setFeeling, f.slug)}
-          />
-        ))}
-      </QuestionScreen>
-    );
-  }
-
-  // Screen 4 — age range
-  if (step === 4) {
-    return (
-      <QuestionScreen
-        step={4}
+        step={5}
         heading="How old are you?"
-        subtext="We use this to connect you with people at a similar stage of life."
-        warmNote="Your age is never shown to other members."
+        subtext="We use this to connect you with people at a similar stage of life. It is never shown to other members."
         onBack={goBack}
       >
         {AGE_RANGES.map((a) => (
@@ -189,14 +195,14 @@ export function OnboardingWizard() {
     );
   }
 
-  // Screen 5 — gender
-  if (step === 5) {
+  // Screen 6 — gender
+  if (step === 6) {
     return (
       <QuestionScreen
-        step={5}
+        step={6}
         heading="How do you identify?"
         subtext="This is optional. Some people feel more comfortable in circles with others who share their identity."
-        warmNote="Whatever you choose, you'll find understanding here."
+        warmNote="Whatever you choose, you will find understanding here."
         onBack={goBack}
       >
         {GENDERS.map((g) => (
@@ -211,14 +217,14 @@ export function OnboardingWizard() {
     );
   }
 
-  // Screen 6 — country
-  if (step === 6) {
+  // Screen 7 — country
+  if (step === 7) {
     return (
       <QuestionScreen
-        step={6}
+        step={7}
         heading="Which country are you in?"
-        subtext="We use this to show you the right crisis resources if you ever need them."
-        warmNote="Your location is never shown to other members."
+        subtext="We use this to show you the right crisis resources if you ever need them. It is never shown to other members."
+        warmNote="Your location is only used for crisis resources."
         onBack={goBack}
       >
         <select
@@ -235,20 +241,20 @@ export function OnboardingWizard() {
             </option>
           ))}
         </select>
-        <Button onClick={() => setStep(7)} disabled={!country} className="w-full">
+        <Button onClick={() => setStep(8)} disabled={!country} className="w-full">
           Continue
         </Button>
       </QuestionScreen>
     );
   }
 
-  // Screen 7 — anonymous name
+  // Screen 8 — anonymous name
   return (
     <QuestionScreen
-      step={7}
-      heading="One last thing — choose your name here."
-      subtext="This is the only name anyone will ever see. Make it something you feel comfortable with."
-      warmNote="No real names. Ever. This is your safe space."
+      step={8}
+      heading="Choose your name here."
+      subtext="This is the only name anyone will ever see. No real names. Ever."
+      warmNote="This is your safe space."
       onBack={goBack}
     >
       <input

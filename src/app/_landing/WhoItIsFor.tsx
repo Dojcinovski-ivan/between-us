@@ -1,11 +1,6 @@
 import Image from "next/image";
 import { CATEGORIES } from "@/lib/categories";
 
-// The reference design lists six specific situations. "Something else" is
-// deliberately left out here, matching the reference, since it exists for
-// onboarding completeness rather than as something to advertise.
-const VISIBLE_CATEGORIES = CATEGORIES.filter((c) => c.slug !== "something_else");
-
 export function WhoItIsFor() {
   return (
     <section className="relative isolate overflow-hidden py-28">
@@ -25,13 +20,13 @@ export function WhoItIsFor() {
         </h2>
 
         <ul className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {VISIBLE_CATEGORIES.map((c) => (
+          {CATEGORIES.map((c) => (
             <li
               key={c.slug}
               className="flex items-start gap-3 rounded-2xl border border-[rgba(232,221,212,0.7)] bg-[rgba(255,255,255,0.8)] px-5 py-4 backdrop-blur-md transition-transform duration-300 ease-calm hover:-translate-y-0.5"
             >
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-              <span className="text-ink">{c.label}</span>
+              <span className="text-ink">{c.description}</span>
             </li>
           ))}
         </ul>

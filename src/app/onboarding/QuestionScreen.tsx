@@ -21,7 +21,7 @@ export function QuestionScreen({
       <button type="button" onClick={onBack} className="mb-4 text-sm text-muted hover:text-ink">
         ← Back
       </button>
-      <ProgressBar step={step} total={7} />
+      <ProgressBar step={step} total={8} />
       <h1 className="text-xl font-semibold text-ink">{heading}</h1>
       <p className="mt-1 text-sm text-muted">{subtext}</p>
 

@@ -1,38 +1,43 @@
 export const CATEGORIES = [
   {
-    slug: "gambling_addict_parent",
-    label: "Growing up with a gambling addict",
-    description: "A childhood shaped by someone else's gambling.",
+    slug: "growing_up",
+    label: "Growing Up Circle",
+    description: "Grew up with addiction or dysfunction.",
   },
   {
-    slug: "substance_addicted_parent",
-    label: "Growing up with an alcoholic or drug-addicted parent",
-    description: "A childhood shaped by a parent's substance use.",
+    slug: "the_caretaker",
+    label: "The One Who Held It Together Circle",
+    description: "Parentification, emotional incest, being the little adult.",
   },
   {
-    slug: "abusive_parent",
-    label: "Growing up with an abusive parent",
-    description: "A childhood where safety wasn't guaranteed at home.",
+    slug: "loving_someone",
+    label: "Loving Someone Who Is Struggling Circle",
+    description: "Currently loving someone with addiction.",
   },
   {
-    slug: "emotionally_unavailable_parent",
-    label: "Growing up with an emotionally unavailable parent",
-    description: "A childhood where love felt distant or out of reach.",
+    slug: "when_home",
+    label: "When Home Didn't Feel Safe Circle",
+    description: "Abuse, control, narcissistic dynamics.",
   },
   {
-    slug: "loving_an_addict",
-    label: "Loving someone with an addiction",
-    description: "Caring about someone whose addiction affects you both.",
+    slug: "invisible_wound",
+    label: "When It Was Never Said Out Loud Circle",
+    description: "Emotional unavailability and neglect.",
   },
   {
-    slug: "abusive_narcissistic_relationship",
-    label: "Being in an abusive or narcissistic relationship",
-    description: "A relationship that left more scars than support.",
+    slug: "leaving_feels_impossible",
+    label: "When Leaving Feels Impossible Circle",
+    description: "Trauma bonding, the cycle of not being able to leave.",
   },
   {
-    slug: "something_else",
-    label: "Something else",
-    description: "A story that doesn't fit neatly into a category.",
+    slug: "finding_way_back",
+    label: "Finding My Way Back Circle",
+    description: "Codependency, people pleasing, a lost sense of self.",
+  },
+  {
+    slug: "understanding_patterns",
+    label: "Understanding My Patterns Circle",
+    description: "Pattern repetition across relationships.",
   },
 ] as const;
 
@@ -44,7 +49,9 @@ export function isValidCategory(value: string): value is CategorySlug {
 
 // Turns a raw category slug into a readable title, e.g.
 // "narcissistic_parent" becomes "Narcissistic Parent". Used as the
-// fallback for any circle whose category is not in CATEGORIES above.
+// fallback for any circle whose category is not in CATEGORIES above
+// (retired slugs from before the pod system, kept alive only because
+// real circles still use them).
 function humanizeSlug(slug: string): string {
   return slug
     .split("_")
@@ -53,30 +60,15 @@ function humanizeSlug(slug: string): string {
     .join(" ");
 }
 
+// One warm name per pod doubles as both the plain label (admin screens,
+// profile) and the circle's display identity (feed header, thread
+// panel, page title). There is no separate clinical label anymore since
+// the pod itself is never shown as a selectable option during
+// onboarding — it is derived, not chosen.
 export function categoryLabel(slug: string): string {
-  return CATEGORIES.find((c) => c.slug === slug)?.label ?? humanizeSlug(slug);
+  return CATEGORIES.find((c) => c.slug === slug)?.label ?? `${humanizeSlug(slug)} Circle`;
 }
 
-// Warm, human circle names, used anywhere the circle's identity is
-// shown (feed header, thread panel, page title, meta tags) rather than
-// the plainer descriptive label above, which stays for onboarding and
-// admin screens where clarity about the category matters more.
-const CIRCLE_NAMES: Record<string, string> = {
-  gambling_addict_parent: "Growing Up Circle",
-  substance_addicted_parent: "Growing Up Circle",
-  abusive_parent: "When Home Didn't Feel Safe Circle",
-  emotionally_unavailable_parent: "When It Was Never Said Out Loud Circle",
-  loving_an_addict: "Loving Someone Who Is Struggling Circle",
-  abusive_narcissistic_relationship: "Finding My Way Back Circle",
-  something_else: "The One Who Held It Together Circle",
-  // Retired onboarding slugs, no longer selectable by new members (see
-  // isValidCategory) but still in use by circles created before the
-  // taxonomy above replaced them. Kept warm and content seeded rather
-  // than left to fall back to a humanized slug.
-  narcissistic_parent: "When It Was Never About You Circle",
-  addiction_impact: "When Addiction Touched My Life Circle",
-};
-
 export function circleName(slug: string): string {
-  return CIRCLE_NAMES[slug] ?? `${humanizeSlug(slug)} Circle`;
+  return categoryLabel(slug);
 }
