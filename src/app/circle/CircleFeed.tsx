@@ -19,6 +19,8 @@ import { DailyQuestionCard } from "./DailyQuestionCard";
 import { IntroductionCard } from "./IntroductionCard";
 import { AnniversaryBanner } from "./AnniversaryBanner";
 import { RhythmCard } from "./RhythmCard";
+import { WaitingRoomCard } from "./WaitingRoomCard";
+import { MembersPanel } from "./MembersPanel";
 import type { Post, ReactionRow } from "./types";
 
 const MAIN_COMPOSER_ID = "composer-textarea";
@@ -31,6 +33,8 @@ type EducationalContent = { title: string; content: string } | null;
 type Rhythm = { accent: "sage" | "terracotta"; label: string; content: string } | null;
 type ReadRow = { post_id: string; user_id: string };
 
+type Member = { id: string; username: string; current_stage: string; created_at: string };
+
 export function CircleFeed({
   circle,
   circleDisplayName,
@@ -41,6 +45,7 @@ export function CircleFeed({
   initialPosts,
   initialReactions,
   initialReads,
+  members,
   currentUser,
   checkIn,
   educationalContent,
@@ -58,6 +63,7 @@ export function CircleFeed({
   initialPosts: Post[];
   initialReactions: ReactionRow[];
   initialReads: ReadRow[];
+  members: Member[];
   currentUser: CurrentUser;
   checkIn: CheckIn;
   educationalContent: EducationalContent;
@@ -72,6 +78,7 @@ export function CircleFeed({
   const [reads, setReads] = useState<ReadRow[]>(initialReads);
   const [isPromptResponse, setIsPromptResponse] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [membersOpen, setMembersOpen] = useState(false);
   const feedEndRef = useRef<HTMLDivElement>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [composerPrefill, setComposerPrefill] = useState<{ text: string } | null>(null);
@@ -257,11 +264,21 @@ export function CircleFeed({
   }
 
   function openThread(postId: string) {
+    setMembersOpen(false);
     setActiveThreadId(postId);
   }
 
   function closeThread() {
     setActiveThreadId(null);
+  }
+
+  function openMembers() {
+    setActiveThreadId(null);
+    setMembersOpen(true);
+  }
+
+  function closeMembers() {
+    setMembersOpen(false);
   }
 
   // If the threaded post is deleted while its panel is open (by its
@@ -367,14 +384,16 @@ export function CircleFeed({
     <>
     <div
       className={`mx-auto w-full max-w-2xl transition-[max-width,padding-right] duration-300 ease-out ${
-        activeThreadPost ? "md:max-w-6xl md:pr-[40%]" : "md:max-w-2xl"
+        activeThreadPost ? "md:max-w-6xl md:pr-[40%]" : membersOpen ? "md:max-w-6xl md:pr-[30%]" : "md:max-w-2xl"
       }`}
     >
     <div
       className={`min-h-[calc(100vh-3rem)] flex-col px-4 pb-8 pt-6 sm:px-6 ${
-        activeThreadPost ? "hidden md:flex" : "flex"
+        activeThreadPost || membersOpen ? "hidden md:flex" : "flex"
       }`}
     >
+      {circle.member_count < 3 && <WaitingRoomCard />}
+
       {/* Header and the daily advice bar stick together as one block so
           both stay visible while scrolling, and the advice sits at the top
           where it never hides behind the composer. */}
@@ -384,6 +403,14 @@ export function CircleFeed({
             <h1 className="text-lg font-semibold text-ink">{circleDisplayName}</h1>
             <p className="text-xs text-muted">
               {circle.member_count} {circle.member_count === 1 ? "member" : "members"}
+              {" · "}
+              <button
+                type="button"
+                onClick={openMembers}
+                className="underline-offset-2 hover:text-ink hover:underline"
+              >
+                Members
+              </button>
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -562,6 +589,20 @@ export function CircleFeed({
             onClose={closeThread}
             onDeleted={handleDeleted}
             onReplyPosted={handleReplyPosted}
+          />
+        </div>
+      </div>
+    )}
+
+    {membersOpen && (
+      <div className="fixed inset-y-0 right-0 z-50 w-full border-l border-border bg-bg md:w-[30%]">
+        <div className="animate-slide-in-right h-full">
+          <MembersPanel
+            members={members}
+            posts={posts}
+            currentUserId={currentUser.id}
+            circleDisplayName={circleDisplayName}
+            onClose={closeMembers}
           />
         </div>
       </div>

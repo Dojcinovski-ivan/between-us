@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { GoogleButton } from "@/components/GoogleButton";
 
 export function LoginForm() {
   const router = useRouter();
@@ -47,6 +48,16 @@ export function LoginForm() {
     <Card>
       <h1 className="text-xl font-semibold text-ink">Welcome back</h1>
       <p className="mt-1 text-sm text-muted">Good to see you again.</p>
+
+      <div className="mt-6">
+        <GoogleButton />
+      </div>
+
+      <div className="mt-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-faint">or</span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <Input

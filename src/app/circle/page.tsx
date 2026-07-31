@@ -36,6 +36,7 @@ export default async function CirclePage() {
     { data: educationalContent },
     { data: question },
     { data: rhythmRows },
+    { data: members },
   ] = await Promise.all([
     supabase
       .from("circles")
@@ -84,6 +85,10 @@ export default async function CirclePage() {
           .eq("day_of_week", dayOfWeek)
           .order("created_at", { ascending: true })
       : Promise.resolve({ data: null }),
+    supabase
+      .from("users")
+      .select("id, username, current_stage, created_at")
+      .eq("circle_id", profile.circle_id),
   ]);
 
   if (!circle) redirect("/onboarding");
@@ -115,6 +120,7 @@ export default async function CirclePage() {
       initialPosts={(posts as Post[]) ?? []}
       initialReactions={(reactions as ReactionRow[]) ?? []}
       initialReads={reads ?? []}
+      members={members ?? []}
       currentUser={{ id: user.id, username: profile.username, current_stage: profile.current_stage }}
       checkIn={
         checkInEligible

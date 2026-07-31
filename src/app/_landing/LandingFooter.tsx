@@ -28,7 +28,7 @@ export function LandingFooter() {
           </a>
         </p>
 
-        <div className="flex flex-wrap items-center gap-6 text-sm text-muted">
+        <div className="flex flex-col items-start gap-3 text-sm text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
           <Link href="/guidelines" className="hover:text-ink">
             Guidelines
           </Link>

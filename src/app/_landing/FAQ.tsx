@@ -7,7 +7,7 @@ const FAQS = [
   {
     question: "Is this therapy?",
     answer:
-      "No. Between Us is peer support, not therapy. You are talking with real people who have lived through something similar, not clinicians. If you are looking for professional care, our Resources page can point you toward real help.",
+      "No. Between Us is peer support, real people who have lived similar experiences. We are not therapists and we do not provide clinical care. If you need professional help please reach out to a mental health specialist.",
   },
   {
     question: "Is it truly anonymous?",
@@ -30,8 +30,8 @@ export function FAQ() {
 
       <div className="mt-10 border-t border-border">
         {FAQS.map((faq) => (
-          <details key={faq.question} className="group border-b border-border py-5">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg text-ink marker:content-none">
+          <details key={faq.question} className="group border-b border-border py-6 sm:py-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-1 text-lg text-ink marker:content-none">
               <span>{faq.question}</span>
               <span className="shrink-0 text-accent transition-transform duration-300 ease-calm group-open:rotate-45">
                 +
