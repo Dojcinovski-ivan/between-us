@@ -30,6 +30,9 @@ export function LandingFooter() {
         </p>
 
         <div className="flex flex-col items-start gap-3 text-sm text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+          <Link href="/blog" className="hover:text-ink">
+            Blog
+          </Link>
           <Link href="/guidelines" className="hover:text-ink">
             Guidelines
           </Link>

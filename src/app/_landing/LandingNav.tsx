@@ -10,6 +10,9 @@ export function LandingNav() {
           <span className="font-display text-xl text-ink">Between Us</span>
         </Link>
         <div className="flex shrink-0 items-center gap-3">
+          <Link href="/blog" className="hidden px-3 py-2 text-sm text-muted hover:text-ink sm:inline-block">
+            Blog
+          </Link>
           <Link href="/login" className="px-3 py-2 text-sm text-muted hover:text-ink">
             Log in
           </Link>
