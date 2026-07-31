@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { weeksSince, isEligibleForCheckIn, anniversaryMilestone, absoluteWeekNumber, weekStart } from "@/lib/time";
+import { weeksSince, isEligibleForCheckIn, anniversaryMilestone, absoluteWeekNumber, weekStart, circleTenureTier } from "@/lib/time";
 import { circleName } from "@/lib/categories";
 import { CircleFeed } from "./CircleFeed";
 import type { Post, ReactionRow } from "./types";
@@ -108,6 +108,7 @@ export default async function CirclePage() {
     <CircleFeed
       circle={circle}
       circleDisplayName={circleName(circle.category)}
+      tier={circleTenureTier(profile.created_at)}
       prompt={prompt}
       isNewPrompt={isNewPrompt}
       rhythm={rhythm}

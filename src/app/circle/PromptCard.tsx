@@ -89,7 +89,7 @@ export function PromptCard({
         style={{ gridTemplateRows: showFull ? "1fr" : "0fr" }}
       >
         <div className="overflow-hidden">
-          <div className={isScrolled ? "px-4 pb-4" : "p-5"}>
+          <div className={isScrolled ? "px-4 pb-4" : "p-4"}>
             {!isScrolled && (
               <div className="flex items-center gap-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-sage">

@@ -83,6 +83,18 @@ export function absoluteWeekNumber(date: Date = new Date()): number {
   return Math.floor(date.getTime() / (7 * 24 * 60 * 60 * 1000));
 }
 
+export type CircleTenureTier = "week1" | "week2" | "week3plus";
+
+// Drives how much of the circle feed shows at once: brand new members
+// see less so the space feels calm rather than crowded, and more
+// appears as they settle in.
+export function circleTenureTier(createdAt: string, now: Date = new Date()): CircleTenureTier {
+  const days = Math.floor((now.getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  if (days <= 7) return "week1";
+  if (days <= 14) return "week2";
+  return "week3plus";
+}
+
 const FOUR_WEEKS_MS = 4 * 7 * 24 * 60 * 60 * 1000;
 
 export function isEligibleForCheckIn(joinedAt: string, lastCheckInAt: string | null, now: Date = new Date()): boolean {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
-import type { AnniversaryMilestone } from "@/lib/time";
+import type { AnniversaryMilestone, CircleTenureTier } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -34,6 +34,7 @@ type ReadRow = { post_id: string; user_id: string };
 export function CircleFeed({
   circle,
   circleDisplayName,
+  tier,
   prompt,
   isNewPrompt,
   rhythm,
@@ -50,6 +51,7 @@ export function CircleFeed({
 }: {
   circle: Circle;
   circleDisplayName: string;
+  tier: CircleTenureTier;
   prompt: Prompt;
   isNewPrompt: boolean;
   rhythm: Rhythm;
@@ -412,12 +414,19 @@ export function CircleFeed({
         </div>
       </div>
 
-      {/* The Thursday/Friday rhythm card and the daily question both play
-          the same "something lighter for today" role, so only one ever
-          shows rather than stacking both. Lives outside the sticky block
-          above, so it scrolls away with the rest of the feed instead of
-          permanently sitting above the messages. */}
-      {rhythm ? (
+      {/* Progressive disclosure: brand new members (week1) see the prompt
+          and nothing else extra, so the circle feels calm rather than a
+          dashboard. Each layer below only earns its place once the
+          member has settled in a little, and the rhythm/educational
+          cards additionally only show once the circle itself has enough
+          activity to make them worth showing.
+
+          The Thursday/Friday rhythm card and the daily question both
+          play the same "something lighter for today" role, so only one
+          ever shows rather than stacking both. Both live outside the
+          sticky block above, so they scroll away with the rest of the
+          feed instead of permanently sitting above the messages. */}
+      {rhythm && tier === "week3plus" && thisWeek.length >= 3 ? (
         <div className="mb-6">
           <RhythmCard
             accent={rhythm.accent}
@@ -427,14 +436,14 @@ export function CircleFeed({
           />
         </div>
       ) : (
-        dailyQuestion && (
+        tier !== "week1" && dailyQuestion && (
           <div className="mb-6">
             <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
           </div>
         )
       )}
 
-      {!hasIntroduced && (
+      {tier === "week1" && !hasIntroduced && (
         <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
       )}
 
@@ -450,7 +459,7 @@ export function CircleFeed({
         />
       )}
 
-      {educationalContent && (
+      {tier === "week3plus" && posts.length >= 5 && educationalContent && (
         <EducationalCard title={educationalContent.title} content={educationalContent.content} />
       )}
 
