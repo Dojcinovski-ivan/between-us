@@ -71,11 +71,7 @@ export async function completeOnboarding(input: OnboardingInput) {
     mechanisms: input.mechanisms as (typeof MECHANISMS)[number]["slug"][],
   });
 
-  const circleId = await matchCircle({
-    category,
-    ageRange: input.ageRange,
-    gender: input.gender,
-  }).catch(() => null);
+  const circleId = await matchCircle(category).catch(() => null);
 
   if (!circleId) {
     return { error: "Something went wrong setting up your circle. Please try again." };
