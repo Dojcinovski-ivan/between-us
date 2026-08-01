@@ -206,13 +206,13 @@ export function CircleFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circle.id]);
 
-  // Only force the scroll on a member's very first visit to a populated
-  // circle (tracked via has_introduced, same signal the introduction card
-  // uses). Once they have introduced themselves or dismissed the card,
-  // later loads leave the feed wherever it naturally lands instead of
-  // yanking someone away from history they are reading.
+  // Every fresh load of the circle lands at the newest message, same as
+  // any chat app. The "do not interrupt" protection only applies to
+  // realtime messages arriving while someone is already reading further
+  // up (handled separately below via isNearBottom), not to opening the
+  // page itself.
   useEffect(() => {
-    if (!initialHasIntroduced) scrollToBottom("auto");
+    scrollToBottom("auto");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
