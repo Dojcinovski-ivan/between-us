@@ -6,6 +6,7 @@ import { stageLabel } from "@/lib/stages";
 import { Card } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/SignOutButton";
 import { BioEditor } from "./BioEditor";
+import { EmailPreferences } from "./EmailPreferences";
 
 export const metadata = {
   title: "Your Profile — Between Us",
@@ -49,6 +50,13 @@ export default async function ProfilePage() {
 
         <div className="mt-5">
           <BioEditor userId={user.id} initialBio={profile.bio} />
+        </div>
+
+        <div className="mt-5 border-t border-border pt-5">
+          <EmailPreferences
+            userId={user.id}
+            initialConsent={profile.email_marketing_consent ?? false}
+          />
         </div>
       </Card>
     </main>

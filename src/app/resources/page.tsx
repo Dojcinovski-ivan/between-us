@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { crisisResourceForCountry, INTERNATIONAL_FALLBACK } from "@/lib/crisisResources";
+import { INTERNATIONAL_FALLBACK } from "@/lib/crisisResources";
 import { Card } from "@/components/ui/Card";
 
 export const metadata = {
@@ -15,6 +15,7 @@ type DbResource = {
   type: string;
   description: string | null;
   url: string | null;
+  category: string | null;
 };
 
 export default async function ResourcesPage() {
@@ -23,14 +24,18 @@ export default async function ResourcesPage() {
 
   const { data: resources } = await supabase
     .from("resources")
-    .select("id, title, type, description, url")
+    .select("id, title, type, description, url, category")
     .order("created_at", { ascending: true });
 
-  const books = ((resources as DbResource[]) ?? []).filter((r) => r.type === "book");
-  const links = ((resources as DbResource[]) ?? []).filter((r) => r.type === "link");
+  // General resources (category null) show to everyone. Category specific
+  // ones only show to members of that pod, so a signed out or newly
+  // registered visitor without a category yet just sees the general set.
+  const visible = ((resources as DbResource[]) ?? []).filter(
+    (r) => r.category === null || r.category === profile?.category,
+  );
 
-  // Crisis resources are always hardcoded — never dependent on the database.
-  const countryResource = crisisResourceForCountry(profile?.country);
+  const books = visible.filter((r) => r.type === "book");
+  const links = visible.filter((r) => r.type === "link");
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col px-4 py-10 sm:px-6">
@@ -46,32 +51,27 @@ export default async function ResourcesPage() {
         A few things that have helped others on this road — for whenever you need them.
       </p>
 
+      <div className="mt-6 rounded-2xl border border-sage/40 bg-sage-soft p-5">
+        <p className="text-sm leading-relaxed text-ink">
+          Between Us is currently available in English only. Your country
+          selection helps us show you relevant crisis resources. It does
+          not affect which circle you join. All circles are conducted in
+          English.
+        </p>
+      </div>
+
       <div className="mt-6 rounded-2xl border-2 border-crisis bg-accent-soft p-5">
         <p className="text-xs font-medium uppercase tracking-wide text-crisis">If you need help right now</p>
-        <div className="mt-3 flex flex-col gap-3">
-          {countryResource && (
-            <div>
-              <p className="text-sm font-medium text-ink">
-                {countryResource.country} — {countryResource.label}
-              </p>
-              <a href={countryResource.tel} className="text-lg font-semibold text-crisis hover:opacity-80">
-                {countryResource.display}
-              </a>
-              <p className="text-xs text-muted">{countryResource.description}</p>
-            </div>
-          )}
-          <div>
-            <p className="text-sm font-medium text-ink">Anywhere else</p>
-            <a
-              href={INTERNATIONAL_FALLBACK.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-lg font-semibold text-crisis hover:opacity-80"
-            >
-              {INTERNATIONAL_FALLBACK.label}
-            </a>
-            <p className="text-xs text-muted">{INTERNATIONAL_FALLBACK.description}</p>
-          </div>
+        <div className="mt-3">
+          <a
+            href={INTERNATIONAL_FALLBACK.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-lg font-semibold text-crisis hover:opacity-80"
+          >
+            {INTERNATIONAL_FALLBACK.label}
+          </a>
+          <p className="text-xs text-muted">{INTERNATIONAL_FALLBACK.description}</p>
         </div>
       </div>
 

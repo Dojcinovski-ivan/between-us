@@ -10,6 +10,7 @@ import type { Resource } from "./types";
 const RESOURCE_TYPES = [
   { value: "book", label: "Book" },
   { value: "link", label: "Link" },
+  { value: "crisis", label: "Crisis" },
 ];
 
 export function ResourcesManager({ initialResources }: { initialResources: Resource[] }) {

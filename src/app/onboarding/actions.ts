@@ -77,6 +77,10 @@ export async function completeOnboarding(input: OnboardingInput) {
     return { error: "Something went wrong setting up your circle. Please try again." };
   }
 
+  // Captured as auth user metadata at registration, since the users profile
+  // row itself is not created until now, at the end of onboarding.
+  const emailMarketingConsent = user.user_metadata?.email_marketing_consent === true;
+
   const admin = createAdminClient();
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
@@ -90,6 +94,8 @@ export async function completeOnboarding(input: OnboardingInput) {
     age_range: input.ageRange,
     gender: input.gender,
     country: input.country,
+    email_marketing_consent: emailMarketingConsent,
+    email_marketing_consent_date: emailMarketingConsent ? new Date().toISOString() : null,
   });
 
   if (insertError) {

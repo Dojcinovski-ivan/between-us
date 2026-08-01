@@ -16,6 +16,7 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -37,6 +38,9 @@ export function RegisterForm() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: { email_marketing_consent: marketingConsent },
+      },
     });
     setIsSubmitting(false);
 
@@ -111,6 +115,22 @@ export function RegisterForm() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
+
+        <label className="flex items-start gap-2.5">
+          <input
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => setMarketingConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-sage focus:ring-sage"
+          />
+          <span className="text-sm leading-relaxed text-muted">
+            I would like to receive circle updates and news from Between Us
+            by email (optional)
+          </span>
+        </label>
+        <p className="-mt-2 text-xs text-faint">
+          You can unsubscribe at any time from your profile settings.
+        </p>
 
         {error && <p className="text-sm text-warn">{error}</p>}
 

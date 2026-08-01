@@ -1,20 +1,10 @@
 import Link from "next/link";
-import { crisisResourceForCountry, INTERNATIONAL_FALLBACK } from "@/lib/crisisResources";
+import { INTERNATIONAL_FALLBACK } from "@/lib/crisisResources";
 
-export function CrisisBanner({ country }: { country: string | null }) {
-  const resource = crisisResourceForCountry(country);
-
+export function CrisisBanner() {
   return (
     <div className="border-t border-border bg-surface/80 px-4 py-2.5 text-center text-xs text-muted backdrop-blur">
-      <span>In crisis right now? </span>
-      {resource && (
-        <>
-          <a href={resource.tel} className="text-crisis underline underline-offset-2 hover:opacity-80">
-            {resource.label} {resource.display}
-          </a>
-          <span> · </span>
-        </>
-      )}
+      <span>In crisis right now? Visit </span>
       <a
         href={INTERNATIONAL_FALLBACK.url}
         target="_blank"
@@ -23,6 +13,7 @@ export function CrisisBanner({ country }: { country: string | null }) {
       >
         findahelpline.com
       </a>
+      <span> to find help in your country.</span>
       <span> · </span>
       <Link href="/guidelines" className="text-crisis underline underline-offset-2 hover:opacity-80">
         Guidelines

@@ -15,11 +15,7 @@ export function WhoItIsFor() {
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-bg via-[rgba(247,243,238,0.7)] to-bg" />
 
       <div className="mx-auto w-full max-w-4xl px-6">
-        <h2 className="font-display text-[clamp(2.25rem,4vw,3rem)] font-medium text-ink">
-          Who it is for
-        </h2>
-
-        <ul className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CATEGORIES.map((c) => (
             <li
               key={c.slug}

@@ -2,22 +2,27 @@ const FAQS = [
   {
     question: "What is Between Us?",
     answer:
-      "Between Us is a free, anonymous community where people affected by someone else's addiction, abuse, or emotional unavailability can find others who truly understand. No clinical labels, no judgment, just people who get it.",
+      "Between Us is a free anonymous community where people affected by someone else's addiction, abuse, or emotional unavailability can find others who truly understand. No clinical labels, no therapists, no judgment. Just people who get it.",
   },
   {
     question: "Is this therapy?",
     answer:
-      "No. Between Us is peer support, real people who have lived similar experiences. We are not therapists and we do not provide clinical care. If you need professional help please reach out to a mental health specialist.",
+      "No. Between Us is peer support, real people who have lived similar experiences supporting each other. We are not therapists and we do not provide clinical care. If you need professional support please reach out to a mental health specialist.",
   },
   {
     question: "Is it truly anonymous?",
     answer:
-      "Completely. You choose your own username, never your real name. We never show anyone's email, and details like your age and location are only used to match you with the right circle. They are never shown to other members.",
+      "Completely. You choose your own username, never your real name. Your email, age, and location are used only to set up your account and find the right circle for you. They are never visible to other members.",
   },
   {
     question: "What if I am in crisis right now?",
     answer:
-      "Please reach out to a professional right away. Between Us is peer support, not crisis care. You will find crisis resources in the footer of every page, or you can visit our Resources page for help specific to where you are.",
+      "Please reach out for professional help right away. Between Us is peer support not crisis care. Visit findahelpline.com to find a crisis line in your country available right now.",
+  },
+  {
+    question: "Is Between Us available in my language?",
+    answer:
+      "Between Us is currently available in English only. All circles are conducted in English regardless of where you are located.",
   },
 ];
 

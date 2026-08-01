@@ -14,11 +14,7 @@ export function LandingFooter() {
         <p className="max-w-xl text-sm leading-relaxed text-muted">
           Between Us is a peer support community, not a mental health service.
           <br />
-          In crisis right now?{" "}
-          <a href="tel:08001110111" className="text-ink underline underline-offset-4">
-            Telefonseelsorge 0800 111 0 111
-          </a>{" "}
-          and{" "}
+          In crisis right now? Visit{" "}
           <a
             href="https://findahelpline.com"
             target="_blank"
@@ -26,7 +22,8 @@ export function LandingFooter() {
             className="text-ink underline underline-offset-4"
           >
             findahelpline.com
-          </a>
+          </a>{" "}
+          to find help in your country.
         </p>
 
         <div className="flex flex-col items-start gap-3 text-sm text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">

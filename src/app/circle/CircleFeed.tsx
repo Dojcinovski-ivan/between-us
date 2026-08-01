@@ -89,7 +89,7 @@ export function CircleFeed({
   // measure against the document. A small threshold counts "close enough"
   // as at the bottom.
   function isNearBottom() {
-    const threshold = 150;
+    const threshold = 200;
     return (
       window.innerHeight + window.scrollY >=
       document.documentElement.scrollHeight - threshold
@@ -206,9 +206,13 @@ export function CircleFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [circle.id]);
 
-  // On load, land at the bottom instantly so the newest messages show first.
+  // Only force the scroll on a member's very first visit to a populated
+  // circle (tracked via has_introduced, same signal the introduction card
+  // uses). Once they have introduced themselves or dismissed the card,
+  // later loads leave the feed wherever it naturally lands instead of
+  // yanking someone away from history they are reading.
   useEffect(() => {
-    scrollToBottom("auto");
+    if (!initialHasIntroduced) scrollToBottom("auto");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -319,7 +323,7 @@ export function CircleFeed({
   }
 
   function handleIntroduceMyself() {
-    setComposerPrefill({ text: "Hi, I just joined this circle. " });
+    setComposerPrefill({ text: "Hi, I just joined this circle... " });
     scrollToComposer();
     markIntroduced();
   }
@@ -470,7 +474,7 @@ export function CircleFeed({
         )
       )}
 
-      {tier === "week1" && !hasIntroduced && (
+      {circle.member_count >= 2 && !hasIntroduced && (
         <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
       )}
 

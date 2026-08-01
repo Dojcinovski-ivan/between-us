@@ -23,14 +23,10 @@ export function LandingHero() {
         </p>
 
         <h1 className="animate-rise text-balance font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight text-ink sm:text-[clamp(2.75rem,7vw,4.5rem)] sm:leading-[0.98]">
-          You don&apos;t have to carry this alone.
+          Anonymous peer support for people healing from relationships that hurt them.
         </h1>
 
-        <p className="animate-rise mt-8 max-w-xl text-lg leading-relaxed text-muted">
-          A free, anonymous community for people healing from someone else&apos;s
-          addiction, abuse, or emotional unavailability.
-        </p>
-        <p className="animate-rise mt-4 max-w-xl italic text-muted">
+        <p className="animate-rise mt-8 max-w-xl italic text-muted">
           We are not therapy. We are the space that makes therapy feel possible.
         </p>
 

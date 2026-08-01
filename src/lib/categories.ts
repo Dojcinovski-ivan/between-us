@@ -2,42 +2,42 @@ export const CATEGORIES = [
   {
     slug: "growing_up",
     label: "Growing Up Circle",
-    description: "Grew up with addiction or dysfunction.",
+    description: "You grew up in a home shaped by addiction, anger, or chaos.",
   },
   {
     slug: "the_caretaker",
     label: "The One Who Held It Together Circle",
-    description: "Parentification, emotional incest, being the little adult.",
+    description: "You were the one who held everything together so nobody else had to.",
   },
   {
     slug: "loving_someone",
     label: "Loving Someone Who Is Struggling Circle",
-    description: "Currently loving someone with addiction.",
+    description: "You love someone who is struggling with addiction and you are exhausted.",
   },
   {
     slug: "when_home",
     label: "When Home Didn't Feel Safe Circle",
-    description: "Abuse, control, narcissistic dynamics.",
+    description: "Home never quite felt safe, and part of you is still waiting for it to.",
   },
   {
     slug: "invisible_wound",
     label: "When It Was Never Said Out Loud Circle",
-    description: "Emotional unavailability and neglect.",
+    description: "The pain was real even though it was never physical.",
   },
   {
     slug: "leaving_feels_impossible",
     label: "When Leaving Feels Impossible Circle",
-    description: "Trauma bonding, the cycle of not being able to leave.",
+    description: "You know you should leave but something keeps pulling you back.",
   },
   {
     slug: "finding_way_back",
     label: "Finding My Way Back Circle",
-    description: "Codependency, people pleasing, a lost sense of self.",
+    description: "You have lost yourself somewhere along the way.",
   },
   {
     slug: "understanding_patterns",
     label: "Understanding My Patterns Circle",
-    description: "Pattern repetition across relationships.",
+    description: "You keep finding yourself in the same kind of relationship and you do not know why.",
   },
 ] as const;
 

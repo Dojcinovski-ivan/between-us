@@ -227,6 +227,14 @@ export function OnboardingWizard() {
         warmNote="Your location is only used for crisis resources."
         onBack={goBack}
       >
+        <div className="rounded-2xl border border-sage/40 bg-sage-soft p-4">
+          <p className="text-sm leading-relaxed text-ink">
+            Between Us is currently available in English only. Your country
+            selection helps us show you relevant crisis resources. It does
+            not affect which circle you join. All circles are conducted in
+            English.
+          </p>
+        </div>
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value)}

@@ -76,8 +76,8 @@ export function ReactionButtons({
             onClick={() => toggle(r.type)}
             disabled={pending === r.type}
             title={r.label}
-            className={`inline-flex items-center gap-1.5 rounded-full border transition-colors disabled:opacity-60 ${
-              isSpecial ? "px-3.5 py-2 text-sm" : "px-3 py-1.5 text-xs"
+            className={`inline-flex items-center gap-1 rounded-full border transition-colors disabled:opacity-60 ${
+              isSpecial ? "px-3 py-1.5 text-xs sm:px-3.5 sm:py-2 sm:text-sm" : "px-2.5 py-1.5 text-xs"
             } ${
               isActive
                 ? isSpecial
@@ -87,7 +87,7 @@ export function ReactionButtons({
             }`}
           >
             <span>{r.emoji}</span>
-            <span className="hidden sm:inline">{r.label}</span>
+            <span>{r.label}</span>
             {isOwnPost && counts[r.type] > 0 && (
               <span className="text-faint">{counts[r.type]}</span>
             )}
