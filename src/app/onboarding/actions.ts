@@ -12,6 +12,7 @@ import { GENDERS } from "@/lib/genders";
 import { COUNTRIES } from "@/lib/countries";
 import { derivePodCategory } from "@/lib/matchPod";
 import { matchCircle } from "@/lib/matchCircle";
+import { sendWelcomeEmail, sendCircleFormedEmail, sendNewMemberEmail } from "@/lib/email";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
@@ -71,11 +72,12 @@ export async function completeOnboarding(input: OnboardingInput) {
     mechanisms: input.mechanisms as (typeof MECHANISMS)[number]["slug"][],
   });
 
-  const circleId = await matchCircle(category).catch(() => null);
+  const matchResult = await matchCircle(category).catch(() => null);
 
-  if (!circleId) {
+  if (!matchResult) {
     return { error: "Something went wrong setting up your circle. Please try again." };
   }
+  const { circleId, newMemberCount } = matchResult;
 
   // Captured as auth user metadata at registration, since the users profile
   // row itself is not created until now, at the end of onboarding.
@@ -104,6 +106,24 @@ export async function completeOnboarding(input: OnboardingInput) {
     }
     return { error: "Something went wrong creating your profile. Please try again." };
   }
+
+  // Awaited rather than fire and forget: a serverless function can be
+  // frozen the moment the response starts, which would silently drop an
+  // un-awaited send. Each function already swallows its own errors, so
+  // this can never fail onboarding itself, it only adds a brief wait.
+  const emailTasks = [sendWelcomeEmail(user.id)];
+  if (newMemberCount === 2) {
+    const { data: firstMember } = await admin
+      .from("users")
+      .select("id")
+      .eq("circle_id", circleId)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (firstMember) emailTasks.push(sendCircleFormedEmail(firstMember.id));
+  } else if (newMemberCount > 2) {
+    emailTasks.push(sendNewMemberEmail(circleId, user.id));
+  }
+  await Promise.allSettled(emailTasks);
 
   redirect("/circle");
 }

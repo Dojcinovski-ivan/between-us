@@ -26,13 +26,20 @@ async function publishDraftIfAny(admin: ReturnType<typeof createAdminClient>, ci
   await admin.from("draft_posts").delete().eq("id", draft.id);
 }
 
+export type MatchCircleResult = { circleId: string; newMemberCount: number };
+
 /**
  * Circle assignment: category only. Joins the fullest circle in the
  * member's pod that still has room, so circles fill up rather than
  * spreading new members thin across many half empty ones. Creates a
  * new circle only when every existing one in the pod is full.
+ *
+ * newMemberCount lets the caller tell a brand new circle (1), a circle
+ * that just formed (2), and an already established circle gaining
+ * another member (3+) apart, which is exactly the distinction the
+ * circle formed vs new member emails need.
  */
-export async function matchCircle(category: string): Promise<string> {
+export async function matchCircle(category: string): Promise<MatchCircleResult> {
   const admin = createAdminClient();
 
   const { data: match } = await admin
@@ -55,7 +62,7 @@ export async function matchCircle(category: string): Promise<string> {
       await publishDraftIfAny(admin, match.id);
     }
 
-    return match.id;
+    return { circleId: match.id, newMemberCount: newCount };
   }
 
   const { data: newCircle, error } = await admin
@@ -68,5 +75,5 @@ export async function matchCircle(category: string): Promise<string> {
     throw new Error("Could not create a circle for this member.");
   }
 
-  return newCircle.id;
+  return { circleId: newCircle.id, newMemberCount: 1 };
 }
