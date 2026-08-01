@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { REPORT_REASONS } from "@/lib/reportReasons";
+import { notifyReportSubmitted } from "./actions";
 
 type PostMenuProps = {
   postId: string;
@@ -46,11 +47,19 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("reports").insert({
-      post_id: postId,
-      reported_by: user.id,
-      reason,
-    });
+    const { data: report } = await supabase
+      .from("reports")
+      .insert({
+        post_id: postId,
+        reported_by: user.id,
+        reason,
+      })
+      .select("id")
+      .single();
+
+    if (report) {
+      void notifyReportSubmitted(report.id);
+    }
     setMode("reportSent");
     setTimeout(() => {
       setOpen(false);

@@ -7,11 +7,14 @@ import { CircleFormedEmail } from "@/emails/CircleFormedEmail";
 import { NewMemberEmail } from "@/emails/NewMemberEmail";
 import { WeeklyDigestEmail } from "@/emails/WeeklyDigestEmail";
 import { ReengagementEmail } from "@/emails/ReengagementEmail";
+import { ReportNotificationEmail } from "@/emails/ReportNotificationEmail";
+import { circleName } from "@/lib/categories";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Between Us <hello@betweenussupport.com>";
 const SITE_URL = "https://betweenussupport.com";
 const CIRCLE_URL = `${SITE_URL}/circle`;
+const ADMIN_URL = `${SITE_URL}/admin`;
 
 function unsubscribeUrl(userId: string) {
   return `${SITE_URL}/unsubscribe?u=${userId}`;
@@ -83,6 +86,42 @@ export async function sendNewMemberEmail(circleId: string, newMemberId: string) 
     );
   } catch {
     // Best effort.
+  }
+}
+
+type ReportNotificationRow = {
+  reason: string;
+  post: { content: string; circles: { category: string } | null; users: { username: string } | null } | null;
+  reporter: { username: string } | null;
+};
+
+export async function sendReportNotification(reportId: string) {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("reports")
+      .select("reason, post:posts(content, circles(category), users(username)), reporter:users(username)")
+      .eq("id", reportId)
+      .single();
+
+    const report = data as unknown as ReportNotificationRow | null;
+    if (!report || !report.post) return;
+
+    await resend.emails.send({
+      from: FROM,
+      to: "hello@betweenussupport.com",
+      subject: "New report in Between Us",
+      react: ReportNotificationEmail({
+        postContent: report.post.content,
+        reason: report.reason,
+        reportedByUsername: report.reporter?.username ?? "someone",
+        postAuthorUsername: report.post.users?.username ?? "someone",
+        circleName: circleName(report.post.circles?.category ?? ""),
+        adminUrl: ADMIN_URL,
+      }),
+    });
+  } catch {
+    // Best effort. Report submission itself must never fail because of this.
   }
 }
 
