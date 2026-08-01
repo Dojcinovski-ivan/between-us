@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LogoMark } from "./LogoMark";
 import { SocialIcons } from "./SocialIcons";
+import { CookieSettingsLink } from "@/components/CookieSettingsLink";
 
 export function LandingFooter() {
   return (
@@ -36,6 +37,13 @@ export function LandingFooter() {
           <Link href="/resources" className="hover:text-ink">
             Resources
           </Link>
+          <Link href="/privacy" className="hover:text-ink">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="hover:text-ink">
+            Terms
+          </Link>
+          <CookieSettingsLink className="hover:text-ink" />
           <Link href="/login" className="hover:text-ink">
             Log in
           </Link>

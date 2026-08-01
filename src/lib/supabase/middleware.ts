@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-const PROTECTED_PATHS = ["/circle", "/profile", "/onboarding", "/admin"];
+import { PROTECTED_PATHS } from "@/lib/protectedPaths";
 
 export async function updateSession(request: NextRequest) {
   // Forwarded to Server Components via headers() so the root layout can

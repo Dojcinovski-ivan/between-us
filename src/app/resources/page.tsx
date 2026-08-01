@@ -3,6 +3,7 @@ import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { INTERNATIONAL_FALLBACK } from "@/lib/crisisResources";
 import { Card } from "@/components/ui/Card";
+import { MinimalLegalLinks } from "@/components/MinimalLegalLinks";
 
 export const metadata = {
   title: "Resources & Support — Between Us",
@@ -108,6 +109,8 @@ export default async function ResourcesPage() {
           </Card>
         </section>
       )}
+
+      <MinimalLegalLinks />
     </main>
   );
 }

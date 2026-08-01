@@ -11,9 +11,9 @@ import { LandingFooter } from "./_landing/LandingFooter";
 import { fraunces, karla } from "@/lib/fonts";
 
 export const metadata = {
-  title: "Between Us: Anonymous peer support for healing",
+  title: "Between Us — Anonymous Peer Support for Relationship Trauma",
   description:
-    "A free, anonymous community for people healing from someone else's addiction, abuse, or emotional unavailability. Find your circle.",
+    "Anonymous peer support for people healing from relationships that hurt them. Free, safe, and always available.",
 };
 
 export default async function HomePage() {

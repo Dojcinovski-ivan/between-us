@@ -7,7 +7,7 @@ import { getAllPosts, getPostBySlug, getRelatedPosts } from "@/lib/blog";
 import { PostBody } from "../PostBody";
 import { BlogCard } from "../BlogCard";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenus.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenussupport.com";
 
 export function generateStaticParams() {
   return getAllPosts().map((post) => ({ slug: post.slug }));

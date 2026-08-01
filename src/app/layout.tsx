@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { CrisisBanner } from "@/components/CrisisBanner";
+import { CookieConsent } from "@/components/CookieConsent";
 import "./globals.css";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenussupport.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Between Us",
   description: "An anonymous peer support community for people healing from relationship trauma.",
 };
@@ -14,9 +18,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = headers().get("x-pathname") ?? "";
-  // The landing page and the blog are the app's warm, editorial,
-  // always-light sections — everywhere else respects the user's theme.
-  const isAlwaysLightPage = pathname === "/" || pathname === "/blog" || pathname.startsWith("/blog/");
+  // The landing page, the blog, and the legal pages are the app's warm,
+  // editorial, always-light sections — everywhere else respects the
+  // user's theme.
+  const isAlwaysLightPage =
+    pathname === "/" ||
+    pathname === "/blog" ||
+    pathname.startsWith("/blog/") ||
+    pathname === "/privacy" ||
+    pathname === "/terms";
 
   return (
     <html lang="en">
@@ -36,6 +46,7 @@ export default function RootLayout({
         >
           <div className="flex-1">{children}</div>
           <CrisisBanner />
+          <CookieConsent />
         </div>
       </body>
     </html>

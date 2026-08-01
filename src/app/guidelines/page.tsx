@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { Card } from "@/components/ui/Card";
+import { MinimalLegalLinks } from "@/components/MinimalLegalLinks";
 
 export const metadata = {
   title: "Community Guidelines — Between Us",
@@ -59,6 +60,8 @@ export default async function GuidelinesPage() {
           </Card>
         ))}
       </div>
+
+      <MinimalLegalLinks />
     </main>
   );
 }
