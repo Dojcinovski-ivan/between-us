@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { weeksSince, isEligibleForCheckIn, anniversaryMilestone, absoluteWeekNumber, weekStart, circleTenureTier } from "@/lib/time";
 import { circleName } from "@/lib/categories";
 import { CircleFeed } from "./CircleFeed";
+import { WaitingRoom } from "./WaitingRoom";
 import type { Post, ReactionRow } from "./types";
 
 export async function generateMetadata() {
@@ -22,12 +23,43 @@ export default async function CirclePage() {
   if (!profile || !profile.circle_id) redirect("/onboarding");
 
   const supabase = createClient();
+
+  // A circle with only one member (necessarily the viewer, since their
+  // own profile is already assigned to it) gets a waiting room instead
+  // of an empty feed. Fetched standalone, ahead of the normal feed's
+  // big query batch, so that batch never has to run at all while
+  // waiting, and the normal feed's own code path below is untouched.
+  const { data: circle } = await supabase
+    .from("circles")
+    .select("id, category, member_count")
+    .eq("id", profile.circle_id)
+    .single();
+
+  if (!circle) redirect("/onboarding");
+
+  if (circle.member_count <= 1) {
+    const { data: draft } = await supabase
+      .from("draft_posts")
+      .select("id, content")
+      .eq("circle_id", circle.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return (
+      <WaitingRoom
+        circleId={circle.id}
+        circleDisplayName={circleName(circle.category)}
+        userId={user.id}
+        initialDraft={draft ?? null}
+      />
+    );
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const weeksIn = weeksSince(profile.created_at);
   const dayOfWeek = new Date().getDay();
 
   const [
-    { data: circle },
     { data: prompt },
     { data: posts },
     { data: reactions },
@@ -38,11 +70,6 @@ export default async function CirclePage() {
     { data: rhythmRows },
     { data: members },
   ] = await Promise.all([
-    supabase
-      .from("circles")
-      .select("id, category, member_count")
-      .eq("id", profile.circle_id)
-      .single(),
     supabase
       .from("prompts")
       .select("id, content, week_start")
@@ -90,8 +117,6 @@ export default async function CirclePage() {
       .select("id, username, current_stage, created_at")
       .eq("circle_id", profile.circle_id),
   ]);
-
-  if (!circle) redirect("/onboarding");
 
   const checkInEligible = isEligibleForCheckIn(profile.created_at, lastCheckIn?.created_at ?? null);
 
