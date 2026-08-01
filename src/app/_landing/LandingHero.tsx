@@ -22,11 +22,11 @@ export function LandingHero() {
           Free · Anonymous · Always open
         </p>
 
-        <h1 className="animate-rise text-balance font-display text-[2.75rem] font-medium leading-[1.05] tracking-tight text-ink sm:text-[clamp(2.75rem,7vw,4.5rem)] sm:leading-[0.98]">
+        <h1 className="animate-rise max-w-2xl text-balance font-display text-[1.75rem] font-medium leading-[1.15] tracking-tight text-ink sm:text-[clamp(1.75rem,4vw,2.75rem)] sm:leading-[1.1]">
           Anonymous peer support for people healing from relationships that hurt them.
         </h1>
 
-        <p className="animate-rise mt-8 max-w-xl italic text-muted">
+        <p className="animate-rise mt-6 max-w-xl italic text-muted">
           We are not therapy. We are the space that makes therapy feel possible.
         </p>
 
