@@ -27,20 +27,20 @@ export function SocialIcons() {
   return (
     <div className="flex items-center gap-4">
       <a
-        href="https://instagram.com/betweenusapp"
+        href="https://www.instagram.com/betweenussupport/"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Between Us on Instagram"
-        className="text-faint transition-colors hover:text-ink"
+        className="text-muted transition-colors hover:text-ink"
       >
         <InstagramIcon />
       </a>
       <a
-        href="https://x.com/betweenusapp"
+        href="https://x.com/betweenussuppor"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Between Us on X"
-        className="text-faint transition-colors hover:text-ink"
+        className="text-muted transition-colors hover:text-ink"
       >
         <XIcon />
       </a>
