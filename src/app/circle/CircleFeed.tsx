@@ -20,6 +20,7 @@ import { IntroductionCard } from "./IntroductionCard";
 import { AnniversaryBanner } from "./AnniversaryBanner";
 import { RhythmCard } from "./RhythmCard";
 import { WaitingRoomCard } from "./WaitingRoomCard";
+import { InviteWelcomeBanner } from "./InviteWelcomeBanner";
 import { MembersPanel } from "./MembersPanel";
 import type { Post, ReactionRow } from "./types";
 
@@ -444,6 +445,8 @@ export function CircleFeed({
           <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} isNew={isNewPrompt} />
         </div>
       </div>
+
+      <InviteWelcomeBanner />
 
       {/* Progressive disclosure: brand new members (week1) see the prompt
           and nothing else extra, so the circle feels calm rather than a

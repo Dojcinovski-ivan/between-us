@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FELT_EXPERIENCES } from "@/lib/feltExperience";
@@ -124,6 +125,89 @@ export async function completeOnboarding(input: OnboardingInput) {
     emailTasks.push(sendNewMemberEmail(circleId, user.id));
   }
   await Promise.allSettled(emailTasks);
+
+  redirect("/circle");
+}
+
+// Invite members skip the full question flow entirely, so their profile
+// gets fixed default answers instead of ones derived from the normal
+// questions, and they are assigned straight to the invite's own circle
+// rather than through matchCircle, since bypassing normal matching is
+// the whole point of an invite link. Kept as a fully separate action
+// from completeOnboarding so the normal signup path is never touched.
+export async function completeInviteOnboarding(rawUsername: string) {
+  const token = cookies().get("invite_token")?.value;
+
+  if (!token) {
+    return { error: "Your invite link has expired. Please use the link again." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Your session expired. Please log in again." };
+  }
+
+  const username = rawUsername.trim();
+  if (!USERNAME_PATTERN.test(username)) {
+    return { error: "Usernames are 3-20 characters: letters, numbers, and underscores only." };
+  }
+
+  const admin = createAdminClient();
+  const { data: invite } = await admin
+    .from("invite_links")
+    .select("id, circle_id, expires_at, max_uses, use_count")
+    .eq("token", token)
+    .maybeSingle();
+
+  const isValid =
+    !!invite &&
+    new Date(invite.expires_at).getTime() > Date.now() &&
+    invite.use_count < invite.max_uses;
+
+  if (!isValid) {
+    return { error: "This invite link is no longer valid." };
+  }
+
+  const { error: insertError } = await admin.from("users").insert({
+    id: user.id,
+    username,
+    category: "growing_up",
+    circle_id: invite.circle_id,
+    age_range: "25_34",
+    gender: "prefer_not_to_say",
+    country: "other",
+  });
+
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return { error: "That username is already taken. Try another." };
+    }
+    return { error: "Something went wrong creating your profile. Please try again." };
+  }
+
+  const { data: circle } = await admin
+    .from("circles")
+    .select("member_count")
+    .eq("id", invite.circle_id)
+    .single();
+
+  await Promise.allSettled([
+    admin.from("invite_links").update({ use_count: invite.use_count + 1 }).eq("id", invite.id),
+    circle
+      ? admin.from("circles").update({ member_count: circle.member_count + 1 }).eq("id", invite.circle_id)
+      : Promise.resolve(null),
+    sendWelcomeEmail(user.id),
+  ]);
+
+  cookies().delete("invite_token");
+  // Short lived and readable by client JS on purpose, it only signals
+  // the circle feed to show the one time welcome banner once, then
+  // expires on its own a minute later regardless.
+  cookies().set("just_invited", "1", { path: "/", maxAge: 60, httpOnly: false, sameSite: "lax" });
 
   redirect("/circle");
 }

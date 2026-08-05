@@ -7,21 +7,25 @@ export function QuestionScreen({
   subtext,
   warmNote,
   onBack,
+  totalSteps = 8,
   children,
 }: {
   step: number;
   heading: string;
   subtext: string;
   warmNote?: string;
-  onBack: () => void;
+  onBack?: () => void;
+  totalSteps?: number;
   children: React.ReactNode;
 }) {
   return (
     <Card>
-      <button type="button" onClick={onBack} className="mb-4 text-sm text-muted hover:text-ink">
-        ← Back
-      </button>
-      <ProgressBar step={step} total={8} />
+      {onBack && (
+        <button type="button" onClick={onBack} className="mb-4 text-sm text-muted hover:text-ink">
+          ← Back
+        </button>
+      )}
+      <ProgressBar step={step} total={totalSteps} />
       <h1 className="text-xl font-semibold text-ink">{heading}</h1>
       <p className="mt-1 text-sm text-muted">{subtext}</p>
 

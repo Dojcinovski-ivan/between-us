@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 
-export function RegisterForm() {
+export function RegisterForm({ invited = false }: { invited?: boolean }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -71,6 +71,13 @@ export function RegisterForm() {
 
   return (
     <Card>
+      {invited && (
+        <div className="mb-6 rounded-2xl border border-sage/40 bg-sage-soft p-4">
+          <p className="text-sm leading-relaxed text-ink">
+            You have been invited to join a circle on Between Us. Create your account to get started.
+          </p>
+        </div>
+      )}
       <h1 className="text-xl font-semibold text-ink">Create your account</h1>
       <p className="mt-1 text-sm text-muted">
         Your email stays private, you&apos;ll pick an anonymous username next.

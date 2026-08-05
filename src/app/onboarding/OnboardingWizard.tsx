@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { QuestionScreen } from "./QuestionScreen";
 import { OptionCard } from "./OptionCard";
-import { completeOnboarding } from "./actions";
+import { completeOnboarding, completeInviteOnboarding } from "./actions";
 
-export function OnboardingWizard() {
+export function OnboardingWizard({ invited = false }: { invited?: boolean }) {
   const [step, setStep] = useState(0);
   const [feltExperience, setFeltExperience] = useState<FeltExperienceSlug | null>(null);
   const [whoWasIt, setWhoWasIt] = useState<WhoWasItSlug | null>(null);
@@ -28,6 +28,58 @@ export function OnboardingWizard() {
   const [username, setUsername] = useState(() => suggestAnonymousName());
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  function handleInviteSubmit() {
+    setError(null);
+    startTransition(async () => {
+      const result = await completeInviteOnboarding(username);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  }
+
+  // Invite members skip screens 1 through 7 entirely, going straight to
+  // just the name screen below. Nothing past this block is touched, so
+  // the normal 8 screen flow stays exactly as it was for everyone else.
+  if (invited) {
+    return (
+      <QuestionScreen
+        step={1}
+        totalSteps={1}
+        heading="Choose your name here."
+        subtext="This is the only name anyone will ever see. No real names. Ever."
+        warmNote="This is your safe space."
+      >
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+        />
+        <button
+          type="button"
+          onClick={() => setUsername(suggestAnonymousName())}
+          className="w-fit text-xs text-accent hover:text-accent-hover"
+        >
+          🔄 Suggest another name
+        </button>
+
+        {error && <p className="text-sm text-warn">{error}</p>}
+
+        <Button onClick={handleInviteSubmit} disabled={isPending || !username.trim()} className="w-full">
+          {isPending ? "Joining…" : "Join your circle"}
+        </Button>
+
+        <p className="text-center text-xs text-faint">
+          By joining, you agree to our{" "}
+          <Link href="/guidelines" className="text-accent hover:text-accent-hover">
+            community guidelines
+          </Link>
+          .
+        </p>
+      </QuestionScreen>
+    );
+  }
 
   function goBack() {
     setError(null);
