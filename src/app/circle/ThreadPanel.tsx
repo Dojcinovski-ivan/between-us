@@ -176,6 +176,28 @@ export function ThreadPanel({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
   }, [parent.id, replies.length]);
 
+  // Same fix as the main feed: the mobile keyboard shrinks this panel's
+  // scroll container without adjusting scrollTop, so the latest reply
+  // silently slides behind the reply composer. Re-asserts the scroll on
+  // every resize tick while the keyboard is open; a no-op once it's closed.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    function handleResize() {
+      if (!viewport) return;
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      if (offset > 0) {
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
+        });
+      }
+    }
+
+    viewport.addEventListener("resize", handleResize);
+    return () => viewport.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">

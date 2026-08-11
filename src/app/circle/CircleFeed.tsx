@@ -117,24 +117,26 @@ export function CircleFeed({
     });
   }
 
-  // Only reacts to the keyboard actually opening (offset going from 0 to
-  // positive), and only follows the conversation down if the reader was
-  // already at the bottom, never yanking them away from something
-  // further up they were reading.
+  // The mobile keyboard shrinks the message list's own height (it's a
+  // flex-1 child of the 100dvh column), but the browser doesn't adjust
+  // scrollTop to compensate, so whatever was at the bottom silently slides
+  // out of view behind the composer. Re-asserting the scroll on every
+  // resize tick (not just once on the open edge) is needed because iOS
+  // fires several as the keyboard animates in, and checking isNearBottom()
+  // here would read the already-shrunk height and wrongly conclude the
+  // reader wasn't at the bottom. Only fires while the keyboard is open
+  // (offset > 0), so scrolling up to read older messages with the
+  // keyboard closed is completely unaffected.
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
 
-    let wasOpen = false;
-
     function handleResize() {
       if (!viewport) return;
       const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      const isOpen = offset > 0;
-      if (isOpen && !wasOpen && isNearBottom()) {
+      if (offset > 0) {
         requestAnimationFrame(() => scrollToBottom("auto"));
       }
-      wasOpen = isOpen;
     }
 
     viewport.addEventListener("resize", handleResize);
