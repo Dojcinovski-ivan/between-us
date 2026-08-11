@@ -103,18 +103,23 @@ export function CircleFeed({
     el.scrollTo({ top: el.scrollHeight, behavior });
   }
 
-  // Scrolls to a specific post's own DOM node, deferred a frame so it
-  // runs after React has committed the new post and the browser has
-  // laid it out. Targeting the element (rather than scrollHeight)
-  // avoids a race where Supabase delivers the realtime echo of your own
-  // post before the insert's HTTP response resolves, making the local
-  // append a no-op and swallowing an effect-based scroll.
+  // Scrolls to a specific post's own DOM node. Targeting the element
+  // (rather than scrollHeight) avoids a race where Supabase delivers the
+  // realtime echo of your own post before the insert's HTTP response
+  // resolves, making the local append a no-op and swallowing a single
+  // scroll attempt. Tapping "Post" also often shifts keyboard focus
+  // (closing or resettling it), so a single attempt right after commit
+  // can land mid-transition and end up hidden behind the composer again
+  // once things settle — replaying it over the next moment catches
+  // whichever state the keyboard finishes in.
   function scrollToPost(postId: string, block: ScrollLogicalPosition) {
-    requestAnimationFrame(() => {
-      const node = document.getElementById(`post-${postId}`);
-      if (node) node.scrollIntoView({ behavior: "auto", block });
-      else scrollToBottom("auto");
-    });
+    for (const delay of [0, 50, 150, 300, 500, 750]) {
+      setTimeout(() => {
+        const node = document.getElementById(`post-${postId}`);
+        if (node) node.scrollIntoView({ behavior: "auto", block });
+        else scrollToBottom("auto");
+      }, delay);
+    }
   }
 
   // The mobile keyboard shrinks the message list's own height (it's a

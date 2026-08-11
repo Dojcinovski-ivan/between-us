@@ -171,9 +171,15 @@ export function ThreadPanel({
   // scrollIntoView on an end marker, which lands more reliably on the
   // last reply. Runs on mount (thread just opened) and whenever the
   // reply list grows, which also covers switching straight from one
-  // open thread to another.
+  // open thread to another. Replayed over a short burst rather than
+  // once, since posting a reply often shifts keyboard focus right as
+  // this fires, and a single attempt can land mid-transition.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
+    for (const delay of [0, 50, 150, 300, 500, 750]) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
+      }, delay);
+    }
   }, [parent.id, replies.length]);
 
   // Same fix as the main feed: the mobile keyboard shrinks this panel's
