@@ -120,29 +120,25 @@ export function PostCard({
       </div>
 
       {isEditing ? (
-        <div className="mt-1">
-          <InlineEditor
-            initialContent={post.content}
-            isOwnPost={isOwnPost}
-            onSave={handleSaveEdit}
-            onCancel={() => setIsEditing(false)}
-          />
-        </div>
+        <InlineEditor
+          initialContent={post.content}
+          isOwnPost={isOwnPost}
+          onSave={handleSaveEdit}
+          onCancel={() => setIsEditing(false)}
+        />
       ) : (
-        <div className="mt-1">
-          <MessageBubble
-            content={post.content}
-            isOwnPost={isOwnPost}
-            isHovering={reactions.isHovering}
-            bubbleRef={reactions.bubbleRef}
-            pickerOpen={reactions.pickerOpen}
-            popupRef={reactions.popupRef}
-            popupStyle={reactions.popupStyle}
-            reacted={reactions.reacted}
-            onOpenPicker={reactions.openPicker}
-            onSelectReaction={reactions.select}
-          />
-        </div>
+        <MessageBubble
+          content={post.content}
+          isOwnPost={isOwnPost}
+          isHovering={reactions.isHovering}
+          bubbleRef={reactions.bubbleRef}
+          pickerOpen={reactions.pickerOpen}
+          popupRef={reactions.popupRef}
+          popupStyle={reactions.popupStyle}
+          reacted={reactions.reacted}
+          onOpenPicker={reactions.openPicker}
+          onSelectReaction={reactions.select}
+        />
       )}
 
       <span className="mt-1 px-1 text-[11px] text-faint">

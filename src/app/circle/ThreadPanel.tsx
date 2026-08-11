@@ -108,29 +108,25 @@ function ThreadReplyRow({
       </div>
 
       {isEditing ? (
-        <div className="mt-1">
-          <InlineEditor
-            initialContent={reply.content}
-            isOwnPost={isOwn}
-            onSave={handleSaveEdit}
-            onCancel={() => setIsEditing(false)}
-          />
-        </div>
+        <InlineEditor
+          initialContent={reply.content}
+          isOwnPost={isOwn}
+          onSave={handleSaveEdit}
+          onCancel={() => setIsEditing(false)}
+        />
       ) : (
-        <div className="mt-1">
-          <MessageBubble
-            content={reply.content}
-            isOwnPost={isOwn}
-            isHovering={reactions.isHovering}
-            bubbleRef={reactions.bubbleRef}
-            pickerOpen={reactions.pickerOpen}
-            popupRef={reactions.popupRef}
-            popupStyle={reactions.popupStyle}
-            reacted={reactions.reacted}
-            onOpenPicker={reactions.openPicker}
-            onSelectReaction={reactions.select}
-          />
-        </div>
+        <MessageBubble
+          content={reply.content}
+          isOwnPost={isOwn}
+          isHovering={reactions.isHovering}
+          bubbleRef={reactions.bubbleRef}
+          pickerOpen={reactions.pickerOpen}
+          popupRef={reactions.popupRef}
+          popupStyle={reactions.popupStyle}
+          reacted={reactions.reacted}
+          onOpenPicker={reactions.openPicker}
+          onSelectReaction={reactions.select}
+        />
       )}
 
       <div className="mt-2">

@@ -32,7 +32,7 @@ export function InlineEditor({
   }
 
   return (
-    <div className={`flex w-full max-w-[80%] flex-col gap-2 sm:max-w-[60%] ${isOwnPost ? "items-end" : "items-start"}`}>
+    <div className={`mt-1 flex w-full max-w-[80%] flex-col gap-2 sm:max-w-[60%] ${isOwnPost ? "items-end" : "items-start"}`}>
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}

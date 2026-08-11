@@ -56,7 +56,7 @@ export function MessageBubble({
   return (
     <div
       ref={bubbleRef}
-      className={`relative max-w-[80%] select-none rounded-2xl px-4 py-3 sm:max-w-[60%] ${
+      className={`relative mt-1 max-w-[80%] select-none rounded-2xl px-4 py-3 sm:max-w-[60%] ${
         isOwnPost ? "rounded-br-md bg-accent text-accent-text" : "rounded-bl-md bg-surface2 text-ink"
       }`}
     >
