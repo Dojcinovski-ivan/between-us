@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: { token: s
     invite.use_count < invite.max_uses;
 
   if (!isValid) {
-    return NextResponse.redirect(new URL("/login", origin));
+    return NextResponse.redirect(new URL("/login?invite=invalid", origin));
   }
 
   const supabase = createClient();

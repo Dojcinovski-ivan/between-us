@@ -195,12 +195,30 @@ export async function completeInviteOnboarding(rawUsername: string) {
     .eq("id", invite.circle_id)
     .single();
 
+  const newMemberCount = (circle?.member_count ?? 0) + 1;
+
+  const emailTasks = [sendWelcomeEmail(user.id)];
+  // Existing circle members otherwise never learned someone new had joined
+  // via an invite link — only the normal-matching path notified them.
+  // Mirrors completeOnboarding's own milestone-vs-ongoing distinction.
+  if (newMemberCount === 2) {
+    const { data: firstMember } = await admin
+      .from("users")
+      .select("id")
+      .eq("circle_id", invite.circle_id)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (firstMember) emailTasks.push(sendCircleFormedEmail(firstMember.id));
+  } else if (newMemberCount > 2) {
+    emailTasks.push(sendNewMemberEmail(invite.circle_id, user.id));
+  }
+
   await Promise.allSettled([
     admin.from("invite_links").update({ use_count: invite.use_count + 1 }).eq("id", invite.id),
     circle
-      ? admin.from("circles").update({ member_count: circle.member_count + 1 }).eq("id", invite.circle_id)
+      ? admin.from("circles").update({ member_count: newMemberCount }).eq("id", invite.circle_id)
       : Promise.resolve(null),
-    sendWelcomeEmail(user.id),
+    ...emailTasks,
   ]);
 
   cookies().delete("invite_token");

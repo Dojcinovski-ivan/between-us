@@ -9,7 +9,11 @@ export const metadata = {
   description: "Log in to your Between Us account.",
 };
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: { invite?: string };
+}) {
   const { user, profile } = await getCurrentUserAndProfile();
 
   if (user && profile?.circle_id) redirect("/circle");
@@ -22,7 +26,7 @@ export default async function LoginPage() {
         <span className="font-display text-xl text-ink">Between Us</span>
       </Link>
       <div className="w-full max-w-sm">
-        <LoginForm />
+        <LoginForm inviteInvalid={searchParams.invite === "invalid"} />
       </div>
     </main>
   );

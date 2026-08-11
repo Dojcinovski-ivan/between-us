@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 
-export function LoginForm() {
+export function LoginForm({ inviteInvalid = false }: { inviteInvalid?: boolean } = {}) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -48,6 +48,13 @@ export function LoginForm() {
     <Card>
       <h1 className="text-xl font-semibold text-ink">Welcome back</h1>
       <p className="mt-1 text-sm text-muted">Good to see you again.</p>
+
+      {inviteInvalid && (
+        <p className="mt-4 rounded-lg bg-warn/10 px-3 py-2 text-sm text-warn">
+          That invite link has expired or already been used. Ask whoever sent it for a new one, or
+          log in below if you already have an account.
+        </p>
+      )}
 
       <div className="mt-6">
         <GoogleButton />

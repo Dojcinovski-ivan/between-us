@@ -14,7 +14,7 @@ type PostMenuProps = {
   onEdit?: () => void;
 };
 
-type Mode = "menu" | "confirmDelete" | "reportReasons" | "reportSent" | "deleting";
+type Mode = "menu" | "confirmDelete" | "reportReasons" | "reportSent" | "reportFailed" | "deleting";
 
 export function PostMenu({ postId, isOwnPost, replyCount, onDeleted, onEdit }: PostMenuProps) {
   const supabase = createClient();
@@ -52,7 +52,7 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted, onEdit }: P
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data: report } = await supabase
+    const { data: report, error } = await supabase
       .from("reports")
       .insert({
         post_id: postId,
@@ -62,9 +62,14 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted, onEdit }: P
       .select("id")
       .single();
 
-    if (report) {
-      void notifyReportSubmitted(report.id);
+    // Previously always showed the "thanks" confirmation regardless of
+    // whether the insert actually succeeded, so a failed report silently
+    // looked successful to the reporter.
+    if (error || !report) {
+      setMode("reportFailed");
+      return;
     }
+    void notifyReportSubmitted(report.id);
     setMode("reportSent");
     setTimeout(close, 1500);
   }
@@ -168,6 +173,21 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted, onEdit }: P
             <p className="p-3 text-center text-sm text-muted">
               Thanks, we&apos;ll take a look.
             </p>
+          )}
+
+          {mode === "reportFailed" && (
+            <div className="flex flex-col gap-2 p-2">
+              <p className="text-center text-sm text-warn">
+                Something went wrong. Please try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => setMode("reportReasons")}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs text-muted hover:bg-surface"
+              >
+                Back
+              </button>
+            </div>
           )}
         </div>
       )}

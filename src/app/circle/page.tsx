@@ -84,8 +84,12 @@ export default async function CirclePage() {
       .eq("circle_id", profile.circle_id)
       .eq("is_removed", false)
       .order("created_at", { ascending: true }),
-    supabase.from("reactions").select("post_id, user_id, type"),
-    supabase.from("post_reads").select("post_id, user_id"),
+    // Scoped to this circle via the posts join rather than fetched
+    // unfiltered: an unscoped select pulled every reaction/read receipt
+    // ever recorded across the whole app on every single page load,
+    // which would only get slower as other circles' activity grew.
+    supabase.from("reactions").select("post_id, user_id, type, posts!inner(circle_id)").eq("posts.circle_id", circle.id),
+    supabase.from("post_reads").select("post_id, user_id, posts!inner(circle_id)").eq("posts.circle_id", circle.id),
     supabase
       .from("stage_checkins")
       .select("created_at")

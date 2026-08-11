@@ -9,6 +9,7 @@ import { WeeklyDigestEmail } from "@/emails/WeeklyDigestEmail";
 import { ReengagementEmail } from "@/emails/ReengagementEmail";
 import { ReportNotificationEmail } from "@/emails/ReportNotificationEmail";
 import { circleName } from "@/lib/categories";
+import { signUnsubscribeToken } from "@/lib/unsubscribeToken";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Between Us <hello@betweenussupport.com>";
@@ -17,7 +18,8 @@ const CIRCLE_URL = `${SITE_URL}/circle`;
 const ADMIN_URL = `${SITE_URL}/admin`;
 
 function unsubscribeUrl(userId: string) {
-  return `${SITE_URL}/unsubscribe?u=${userId}`;
+  const token = signUnsubscribeToken(userId);
+  return `${SITE_URL}/unsubscribe?u=${userId}&t=${token}`;
 }
 
 // Every send function swallows its own errors rather than throwing, since
