@@ -118,31 +118,24 @@ export function CircleFeed({
   }
 
   // The mobile keyboard shrinks the message list's own height (it's a
-  // flex-1 child of the 100dvh column), but the browser doesn't adjust
-  // scrollTop to compensate, so whatever was at the bottom silently slides
-  // out of view behind the composer. Re-asserting the scroll on every
-  // resize tick (not just once on the open edge) is needed because iOS
-  // fires several as the keyboard animates in, and checking isNearBottom()
-  // here would read the already-shrunk height and wrongly conclude the
-  // reader wasn't at the bottom. Only fires while the keyboard is open
-  // (offset > 0), so scrolling up to read older messages with the
-  // keyboard closed is completely unaffected.
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    function handleResize() {
-      if (!viewport) return;
-      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      if (offset > 0) {
-        requestAnimationFrame(() => scrollToBottom("auto"));
-      }
+  // flex-1 child of the 100dvh column) as it animates open, over several
+  // steps, but the browser never adjusts scrollTop to compensate, so
+  // whatever was at the bottom slides out of view behind the composer.
+  // Chasing visualViewport resize events doesn't work: iOS also fires
+  // those continuously while typing (the QuickType suggestion bar
+  // reflows with every keystroke), so reacting to every resize fights
+  // the reader instead of just catching the keyboard's own open
+  // animation — that's what moved the scroll on every keystroke.
+  // Instead, capture "were we at the bottom" once, right as the composer
+  // is focused (before the keyboard has shrunk anything), then replay a
+  // short fixed burst of corrections while the keyboard finishes
+  // animating in. Nothing here re-fires while the reader is just typing.
+  function handleComposerFocus() {
+    if (!isNearBottom()) return;
+    for (const delay of [50, 150, 300, 500, 750]) {
+      setTimeout(() => scrollToBottom("auto"), delay);
     }
-
-    viewport.addEventListener("resize", handleResize);
-    return () => viewport.removeEventListener("resize", handleResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -574,7 +567,7 @@ export function CircleFeed({
           the keyboard by hand. The column's own height already responds
           to the mobile keyboard opening (100dvh), so this just sits
           right above it with no JS involved. */}
-      <div className="shrink-0 border-t border-border bg-bg px-4 py-3 sm:px-6">
+      <div className="shrink-0 border-t border-border bg-bg px-4 py-3 sm:px-6" onFocus={handleComposerFocus}>
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30">
           <Composer
             circleId={circle.id}

@@ -178,25 +178,25 @@ export function ThreadPanel({
 
   // Same fix as the main feed: the mobile keyboard shrinks this panel's
   // scroll container without adjusting scrollTop, so the latest reply
-  // silently slides behind the reply composer. Re-asserts the scroll on
-  // every resize tick while the keyboard is open; a no-op once it's closed.
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
+  // silently slides behind the reply composer. Chasing visualViewport
+  // resize events fires on every keystroke too (iOS reflows the QuickType
+  // bar as you type), so instead this replays a short fixed burst of
+  // corrections starting when the reply composer is focused, once, rather
+  // than reacting to every resize tick.
+  function isNearBottom() {
+    const el = scrollRef.current;
+    if (!el) return true;
+    return el.scrollTop + el.clientHeight >= el.scrollHeight - 200;
+  }
 
-    function handleResize() {
-      if (!viewport) return;
-      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      if (offset > 0) {
-        requestAnimationFrame(() => {
-          scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
-        });
-      }
+  function handleComposerFocus() {
+    if (!isNearBottom()) return;
+    for (const delay of [50, 150, 300, 500, 750]) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
+      }, delay);
     }
-
-    viewport.addEventListener("resize", handleResize);
-    return () => viewport.removeEventListener("resize", handleResize);
-  }, []);
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -254,7 +254,7 @@ export function ThreadPanel({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-border p-3">
+      <div className="shrink-0 border-t border-border p-3" onFocus={handleComposerFocus}>
         <Composer
           circleId={circleId}
           parentId={parent.id}
