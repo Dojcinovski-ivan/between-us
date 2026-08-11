@@ -9,6 +9,7 @@ export type Post = {
   parent_id: string | null;
   is_removed: boolean;
   created_at: string;
+  edited_at: string | null;
   users: { username: string; current_stage: string } | null;
 };
 

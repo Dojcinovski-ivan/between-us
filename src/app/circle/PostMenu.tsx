@@ -1,35 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { REPORT_REASONS } from "@/lib/reportReasons";
 import { notifyReportSubmitted } from "./actions";
+import { usePopoverPosition, useOutsideClose } from "./usePopover";
 
 type PostMenuProps = {
   postId: string;
   isOwnPost: boolean;
   replyCount: number;
   onDeleted: () => void;
+  onEdit?: () => void;
 };
 
 type Mode = "menu" | "confirmDelete" | "reportReasons" | "reportSent" | "deleting";
 
-export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuProps) {
+export function PostMenu({ postId, isOwnPost, replyCount, onDeleted, onEdit }: PostMenuProps) {
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("menu");
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setMode("menu");
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const { ref: panelRef, style: panelStyle } = usePopoverPosition(triggerRef, open);
+
+  function close() {
+    setOpen(false);
+    setMode("menu");
+  }
+
+  useOutsideClose([triggerRef, panelRef], close, open);
 
   async function handleDelete() {
     setMode("deleting");
@@ -39,6 +39,11 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
       return;
     }
     onDeleted();
+  }
+
+  function handleEditClick() {
+    close();
+    onEdit?.();
   }
 
   async function handleReport(reason: string) {
@@ -61,14 +66,11 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
       void notifyReportSubmitted(report.id);
     }
     setMode("reportSent");
-    setTimeout(() => {
-      setOpen(false);
-      setMode("menu");
-    }, 1500);
+    setTimeout(close, 1500);
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={triggerRef} className="relative inline-flex">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -79,7 +81,11 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-40 mt-1 w-56 rounded-xl border border-border bg-surface2 p-2 shadow-lg shadow-black/30">
+        <div
+          ref={panelRef}
+          style={panelStyle}
+          className="z-40 w-56 rounded-xl border border-border bg-surface2 p-2 shadow-lg shadow-black/30"
+        >
           {mode === "menu" && (
             <div className="flex flex-col">
               {!isOwnPost && (
@@ -89,6 +95,15 @@ export function PostMenu({ postId, isOwnPost, replyCount, onDeleted }: PostMenuP
                   className="rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface"
                 >
                   Report this post
+                </button>
+              )}
+              {isOwnPost && onEdit && (
+                <button
+                  type="button"
+                  onClick={handleEditClick}
+                  className="rounded-lg px-3 py-2 text-left text-sm text-ink hover:bg-surface"
+                >
+                  Edit post
                 </button>
               )}
               {isOwnPost && (

@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
 import type { Post } from "./types";
 import { PostMenu } from "./PostMenu";
 import { Composer } from "./Composer";
-import { ReactionButtons } from "./ReactionButtons";
+import { MessageBubble } from "./MessageBubble";
+import { ReactionSummary } from "./ReactionSummary";
+import { useMessageReactions } from "./useMessageReactions";
+import { InlineEditor } from "./InlineEditor";
 import { StageDot } from "./StageDot";
 
 type ReactionData = { reactedTypes: ReactionType[]; counts: Record<ReactionType, number> };
@@ -54,29 +58,87 @@ function ThreadReplyRow({
   currentUserId,
   reactionsFor,
   onDeleted,
+  onEdited,
 }: {
   reply: Post;
   currentUserId: string;
   reactionsFor: (postId: string) => ReactionData;
   onDeleted: (postId: string) => void;
+  onEdited: (postId: string, content: string, editedAt: string) => void;
 }) {
+  const supabase = createClient();
   const isOwn = reply.user_id === currentUserId;
   const { reactedTypes, counts } = reactionsFor(reply.id);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const reactions = useMessageReactions({
+    postId: reply.id,
+    initialReactedTypes: reactedTypes,
+    initialCounts: counts,
+  });
+
+  async function handleSaveEdit(content: string) {
+    const editedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("posts")
+      .update({ content, edited_at: editedAt })
+      .eq("id", reply.id);
+    if (!error) {
+      onEdited(reply.id, content, editedAt);
+      setIsEditing(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col items-start">
+    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
       <div className="flex items-center gap-2 text-xs text-muted">
         {reply.users && <StageDot stage={reply.users.current_stage} />}
         <span className="font-medium text-ink">{isOwn ? "You" : (reply.users?.username ?? "someone")}</span>
-        <span className="text-faint">{timeAgo(reply.created_at)}</span>
-        <PostMenu postId={reply.id} isOwnPost={isOwn} replyCount={0} onDeleted={() => onDeleted(reply.id)} />
-      </div>
-      <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{reply.content}</p>
-      <div className="mt-2">
-        <ReactionButtons
+        <span className="text-faint">
+          {timeAgo(reply.created_at)}
+          {reply.edited_at && " · Edited"}
+        </span>
+        <PostMenu
           postId={reply.id}
           isOwnPost={isOwn}
-          initialReactedTypes={reactedTypes}
-          initialCounts={counts}
+          replyCount={0}
+          onDeleted={() => onDeleted(reply.id)}
+          onEdit={isOwn ? () => setIsEditing(true) : undefined}
+        />
+      </div>
+
+      {isEditing ? (
+        <div className="mt-1">
+          <InlineEditor
+            initialContent={reply.content}
+            isOwnPost={isOwn}
+            onSave={handleSaveEdit}
+            onCancel={() => setIsEditing(false)}
+          />
+        </div>
+      ) : (
+        <div className="mt-1">
+          <MessageBubble
+            content={reply.content}
+            isOwnPost={isOwn}
+            isHovering={reactions.isHovering}
+            bubbleRef={reactions.bubbleRef}
+            pickerOpen={reactions.pickerOpen}
+            popupRef={reactions.popupRef}
+            popupStyle={reactions.popupStyle}
+            reacted={reactions.reacted}
+            onOpenPicker={reactions.openPicker}
+            onSelectReaction={reactions.select}
+          />
+        </div>
+      )}
+
+      <div className="mt-2">
+        <ReactionSummary
+          reacted={reactions.reacted}
+          counts={reactions.counts}
+          isOwnPost={isOwn}
+          onOpenPicker={reactions.openPicker}
         />
       </div>
     </div>
@@ -92,6 +154,7 @@ export function ThreadPanel({
   reactionsFor,
   onClose,
   onDeleted,
+  onEdited,
   onReplyPosted,
 }: {
   parent: Post;
@@ -102,25 +165,24 @@ export function ThreadPanel({
   reactionsFor: (postId: string) => ReactionData;
   onClose: () => void;
   onDeleted: (postId: string) => void;
+  onEdited: (postId: string, content: string, editedAt: string) => void;
   onReplyPosted: (reply: Post) => void;
 }) {
   const isOwnParent = parent.user_id === currentUserId;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Scrolls the container itself to its true scrollHeight rather than
-  // scrollIntoView on an end marker: the marker sits before the bottom
-  // padding reserved for PostMenu dropdown clearance, so scrollIntoView
-  // would land right at the last reply with no clearance visible, the
-  // same clipping problem the padding is meant to solve. Runs on mount
-  // (thread just opened) and whenever the reply list grows, which also
-  // covers switching straight from one open thread to another.
+  // scrollIntoView on an end marker, which lands more reliably on the
+  // last reply. Runs on mount (thread just opened) and whenever the
+  // reply list grows, which also covers switching straight from one
+  // open thread to another.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "auto" });
   }, [parent.id, replies.length]);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
         <button
           type="button"
           onClick={onClose}
@@ -143,18 +205,15 @@ export function ThreadPanel({
         </button>
       </div>
 
-      {/* pb-52 rather than the surrounding py-4, matching the same
-          clearance value used in the main feed for the same reason:
-          PostMenu's dropdown is absolutely positioned and gets clipped
-          by this scrolling container when the last reply (the one the
-          panel auto-scrolls to) opens its menu, since there is nothing
-          below it in the scrollable content otherwise. */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-52 pt-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 pt-4">
         <div className="rounded-r-lg border-l-2 border-accent bg-surface2 py-2 pl-3">
           <div className="flex items-center gap-2 text-xs text-muted">
             {parent.users && <StageDot stage={parent.users.current_stage} />}
             <span className="font-medium text-ink">{isOwnParent ? "You" : (parent.users?.username ?? "someone")}</span>
-            <span className="text-faint">{timeAgo(parent.created_at)}</span>
+            <span className="text-faint">
+              {timeAgo(parent.created_at)}
+              {parent.edited_at && " · Edited"}
+            </span>
           </div>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{parent.content}</p>
         </div>
@@ -170,13 +229,14 @@ export function ThreadPanel({
                 currentUserId={currentUserId}
                 reactionsFor={reactionsFor}
                 onDeleted={onDeleted}
+                onEdited={onEdited}
               />
             ))
           )}
         </div>
       </div>
 
-      <div className="border-t border-border p-3">
+      <div className="shrink-0 border-t border-border p-3">
         <Composer
           circleId={circleId}
           parentId={parent.id}

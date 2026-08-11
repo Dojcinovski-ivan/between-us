@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { timeAgo } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
 import type { Post } from "./types";
-import { ReactionButtons } from "./ReactionButtons";
+import { MessageBubble } from "./MessageBubble";
+import { ReactionSummary } from "./ReactionSummary";
+import { useMessageReactions } from "./useMessageReactions";
+import { InlineEditor } from "./InlineEditor";
 import { PostMenu } from "./PostMenu";
 import { StageDot } from "./StageDot";
 
@@ -19,6 +23,7 @@ type PostCardProps = {
   readsFor: (postId: string) => ReadData;
   onRead: (postId: string) => void;
   onDeleted: (postId: string) => void;
+  onEdited: (postId: string, content: string, editedAt: string) => void;
   onOpenThread: (postId: string) => void;
 };
 
@@ -32,19 +37,27 @@ export function PostCard({
   readsFor,
   onRead,
   onDeleted,
+  onEdited,
   onOpenThread,
 }: PostCardProps) {
+  const supabase = createClient();
   const isOwnPost = post.user_id === currentUserId;
   const { reactedTypes, counts } = reactionsFor(post.id);
   const { count: readCount, alreadyRead } = readsFor(post.id);
-  const bubbleRef = useRef<HTMLDivElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const reactions = useMessageReactions({
+    postId: post.id,
+    initialReactedTypes: reactedTypes,
+    initialCounts: counts,
+  });
 
   // Records a silent read once this post has spent 3 seconds in view,
   // skipped entirely for your own posts and for posts already recorded
   // (from this or an earlier visit).
   useEffect(() => {
     if (isOwnPost || alreadyRead) return;
-    const node = bubbleRef.current;
+    const node = reactions.bubbleRef.current;
     if (!node) return;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -72,10 +85,22 @@ export function PostCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post.id, isOwnPost, alreadyRead]);
 
+  async function handleSaveEdit(content: string) {
+    const editedAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("posts")
+      .update({ content, edited_at: editedAt })
+      .eq("id", post.id);
+    if (!error) {
+      onEdited(post.id, content, editedAt);
+      setIsEditing(false);
+    }
+  }
+
   return (
     <div
       id={`post-${post.id}`}
-      className={`flex scroll-mb-52 flex-col ${isOwnPost ? "items-end" : "items-start"}`}
+      className={`flex flex-col ${isOwnPost ? "items-end" : "items-start"}`}
     >
       <div className="flex items-center gap-2 px-1 text-xs text-muted">
         {post.users && <StageDot stage={post.users.current_stage} />}
@@ -85,28 +110,52 @@ export function PostCard({
             Prompt response
           </span>
         )}
-        <PostMenu postId={post.id} isOwnPost={isOwnPost} replyCount={replyCount} onDeleted={() => onDeleted(post.id)} />
-      </div>
-
-      <div
-        ref={bubbleRef}
-        className={`mt-1 max-w-[80%] rounded-2xl px-4 py-3 sm:max-w-[60%] ${
-          isOwnPost
-            ? "rounded-br-md bg-accent text-accent-text"
-            : "rounded-bl-md bg-surface2 text-ink"
-        }`}
-      >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{post.content}</p>
-      </div>
-
-      <span className="mt-1 px-1 text-[11px] text-faint">{timeAgo(post.created_at)}</span>
-
-      <div className="mt-2 px-1">
-        <ReactionButtons
+        <PostMenu
           postId={post.id}
           isOwnPost={isOwnPost}
-          initialReactedTypes={reactedTypes}
-          initialCounts={counts}
+          replyCount={replyCount}
+          onDeleted={() => onDeleted(post.id)}
+          onEdit={isOwnPost ? () => setIsEditing(true) : undefined}
+        />
+      </div>
+
+      {isEditing ? (
+        <div className="mt-1">
+          <InlineEditor
+            initialContent={post.content}
+            isOwnPost={isOwnPost}
+            onSave={handleSaveEdit}
+            onCancel={() => setIsEditing(false)}
+          />
+        </div>
+      ) : (
+        <div className="mt-1">
+          <MessageBubble
+            content={post.content}
+            isOwnPost={isOwnPost}
+            isHovering={reactions.isHovering}
+            bubbleRef={reactions.bubbleRef}
+            pickerOpen={reactions.pickerOpen}
+            popupRef={reactions.popupRef}
+            popupStyle={reactions.popupStyle}
+            reacted={reactions.reacted}
+            onOpenPicker={reactions.openPicker}
+            onSelectReaction={reactions.select}
+          />
+        </div>
+      )}
+
+      <span className="mt-1 px-1 text-[11px] text-faint">
+        {timeAgo(post.created_at)}
+        {post.edited_at && " · Edited"}
+      </span>
+
+      <div className="mt-2 px-1">
+        <ReactionSummary
+          reacted={reactions.reacted}
+          counts={reactions.counts}
+          isOwnPost={isOwnPost}
+          onOpenPicker={reactions.openPicker}
         />
       </div>
 

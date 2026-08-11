@@ -80,45 +80,36 @@ export function CircleFeed({
   const [isPromptResponse, setIsPromptResponse] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(false);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const feedEndRef = useRef<HTMLDivElement>(null);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [composerPrefill, setComposerPrefill] = useState<{ text: string } | null>(null);
   const [hasIntroduced, setHasIntroduced] = useState(initialHasIntroduced);
   const [dismissedAnniversary, setDismissedAnniversary] = useState(false);
 
-  // The page itself scrolls (there is no inner overflow container), so we
-  // measure against the document. A small threshold counts "close enough"
-  // as at the bottom.
+  // The message list is its own scroll container (not the window), so
+  // typing in the composer or the mobile keyboard opening never moves
+  // anything outside of it, and reaching the very top of the
+  // conversation is just an ordinary scroll with nothing pulling it back.
   function isNearBottom() {
+    const el = messageListRef.current;
+    if (!el) return true;
     const threshold = 200;
-    return (
-      window.innerHeight + window.scrollY >=
-      document.documentElement.scrollHeight - threshold
-    );
+    return el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
   }
 
-  // Scrolls the window (not feedEndRef) to its true maximum. The composer
-  // is position:sticky, so it reserves real space at the end of the flow;
-  // scrolling to the document's max lands the newest message just above the
-  // composer rather than tucked behind it, which scrollIntoView on the
-  // end marker would do.
   function scrollToBottom(behavior: ScrollBehavior) {
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior });
+    const el = messageListRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior });
   }
 
-  // Scrolls to a specific post's own DOM node. Deferred a macrotask so it
-  // runs after React has committed the new post. Targeting the element
-  // (which is guaranteed present) rather than the document height avoids a
-  // race: Supabase can deliver the realtime echo of your own post before
-  // the insert's HTTP response resolves, making the local append a no-op
-  // and swallowing an effect-based scroll. The bubbles carry a large
-  // scroll-margin-bottom so block:"end" clears the sticky composer.
+  // Scrolls to a specific post's own DOM node, deferred a frame so it
+  // runs after React has committed the new post and the browser has
+  // laid it out. Targeting the element (rather than scrollHeight)
+  // avoids a race where Supabase delivers the realtime echo of your own
+  // post before the insert's HTTP response resolves, making the local
+  // append a no-op and swallowing an effect-based scroll.
   function scrollToPost(postId: string, block: ScrollLogicalPosition) {
-    // One animation frame, so it runs after React has committed and the
-    // browser has laid out the new bubble (setTimeout(0) could fire before
-    // layout settled and stop short). "auto" (instant) rather than "smooth":
-    // a long smooth scroll can be interrupted mid-animation. The bubbles
-    // carry scroll-margin-bottom so block:"end" clears the sticky composer.
     requestAnimationFrame(() => {
       const node = document.getElementById(`post-${postId}`);
       if (node) node.scrollIntoView({ behavior: "auto", block });
@@ -126,25 +117,29 @@ export function CircleFeed({
     });
   }
 
+  // Only reacts to the keyboard actually opening (offset going from 0 to
+  // positive), and only follows the conversation down if the reader was
+  // already at the bottom, never yanking them away from something
+  // further up they were reading.
   useEffect(() => {
     const viewport = window.visualViewport;
     if (!viewport) return;
 
-    function handleViewportChange() {
+    let wasOpen = false;
+
+    function handleResize() {
       if (!viewport) return;
       const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      setKeyboardOffset(offset);
-      if (offset > 0) {
-        feedEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      const isOpen = offset > 0;
+      if (isOpen && !wasOpen && isNearBottom()) {
+        requestAnimationFrame(() => scrollToBottom("auto"));
       }
+      wasOpen = isOpen;
     }
 
-    viewport.addEventListener("resize", handleViewportChange);
-    viewport.addEventListener("scroll", handleViewportChange);
-    return () => {
-      viewport.removeEventListener("resize", handleViewportChange);
-      viewport.removeEventListener("scroll", handleViewportChange);
-    };
+    viewport.addEventListener("resize", handleResize);
+    return () => viewport.removeEventListener("resize", handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -176,7 +171,7 @@ export function CircleFeed({
           }
           const post: Post = { ...row, users: { username, current_stage: currentStage } };
           // Capture the reader's position before the new post grows the
-          // document. Your own posts are followed to the bottom by the
+          // list. Your own posts are followed to the bottom by the
           // submit handlers, so here we only react to other members.
           const isOwn = row.user_id === currentUser.id;
           const wasNearBottom = isNearBottom();
@@ -184,6 +179,21 @@ export function CircleFeed({
           if (!isOwn && wasNearBottom) {
             setTimeout(() => scrollToBottom("smooth"), 0);
           }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "posts",
+          filter: `circle_id=eq.${circle.id}`,
+        },
+        (payload) => {
+          const row = payload.new as { id: string; content: string; edited_at: string | null };
+          setPosts((prev) =>
+            prev.map((p) => (p.id === row.id ? { ...p, content: row.content, edited_at: row.edited_at } : p)),
+          );
         },
       )
       .on(
@@ -254,6 +264,10 @@ export function CircleFeed({
     setPosts((prev) => prev.filter((p) => p.id !== postId && p.parent_id !== postId));
   }
 
+  function handleEdited(postId: string, content: string, editedAt: string) {
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, content, edited_at: editedAt } : p)));
+  }
+
   function handleReplyPosted(reply: Post) {
     // Replies no longer render inline in the main feed, so this only needs
     // to update shared state. The thread panel scrolls itself to the new
@@ -263,8 +277,7 @@ export function CircleFeed({
 
   function handleTopLevelPosted(post: Post) {
     setPosts((prev) => (prev.some((p) => p.id === post.id) ? prev : [...prev, post]));
-    // Your own new post: follow it to the bottom (its scroll-margin clears
-    // the sticky composer so the whole bubble stays visible).
+    // Your own new post: follow it to the bottom.
     scrollToPost(post.id, "end");
   }
 
@@ -295,27 +308,25 @@ export function CircleFeed({
     }
   }, [posts, activeThreadId]);
 
-  function handleRespondToPrompt() {
-    setIsPromptResponse(true);
-    const el = document.getElementById(MAIN_COMPOSER_ID);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLTextAreaElement | null)?.focus();
+  function focusComposer() {
+    document.getElementById(MAIN_COMPOSER_ID)?.focus();
   }
 
-  function scrollToComposer() {
-    document.getElementById(MAIN_COMPOSER_ID)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  function handleRespondToPrompt() {
+    setIsPromptResponse(true);
+    focusComposer();
   }
 
   function handleRespondToQuestion() {
     if (!dailyQuestion) return;
     setComposerPrefill({ text: `Reflecting on today's question, "${dailyQuestion}"\n\n` });
-    scrollToComposer();
+    focusComposer();
   }
 
   function handleRespondToRhythm() {
     if (!rhythm) return;
     setComposerPrefill({ text: `${rhythm.label}, "${rhythm.content}"\n\n` });
-    scrollToComposer();
+    focusComposer();
   }
 
   async function markIntroduced() {
@@ -325,7 +336,7 @@ export function CircleFeed({
 
   function handleIntroduceMyself() {
     setComposerPrefill({ text: "Hi, I just joined this circle... " });
-    scrollToComposer();
+    focusComposer();
     markIntroduced();
   }
 
@@ -388,21 +399,16 @@ export function CircleFeed({
   return (
     <>
     <div
-      className={`mx-auto w-full max-w-2xl transition-[max-width,padding-right] duration-300 ease-out ${
+      className={`mx-auto flex h-[100dvh] w-full max-w-2xl flex-col transition-[max-width,padding-right] duration-300 ease-out ${
         activeThreadPost ? "md:max-w-6xl md:pr-[40%]" : membersOpen ? "md:max-w-6xl md:pr-[30%]" : "md:max-w-2xl"
       }`}
     >
-    <div
-      className={`min-h-[calc(100vh-3rem)] flex-col px-4 pb-8 pt-6 sm:px-6 ${
-        activeThreadPost || membersOpen ? "hidden md:flex" : "flex"
-      }`}
-    >
-      {circle.member_count < 3 && <WaitingRoomCard />}
-
-      {/* Header and the daily advice bar stick together as one block so
-          both stay visible while scrolling, and the advice sits at the top
-          where it never hides behind the composer. */}
-      <div className="sticky top-0 z-20 -mx-4 mb-6 border-b border-border bg-bg sm:-mx-6">
+    <div className={`h-full flex-col ${activeThreadPost || membersOpen ? "hidden md:flex" : "flex"}`}>
+      {/* Static header: circle name, nav, the daily advice bar, and the
+          (collapsed by default) prompt indicator. Never scrolls away,
+          but stays small so the conversation is what actually fills the
+          screen. */}
+      <div className="shrink-0 border-b border-border bg-bg">
         <header className="flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 sm:px-6">
           <div>
             <h1 className="text-lg font-semibold text-ink">{circleDisplayName}</h1>
@@ -441,123 +447,132 @@ export function CircleFeed({
           </div>
         )}
 
-        <div className="px-4 pb-3 sm:px-6">
-          <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} isNew={isNewPrompt} />
-        </div>
+        {prompt && (
+          <div className="px-4 pb-3 sm:px-6">
+            <PromptCard prompt={prompt} onRespond={handleRespondToPrompt} isNew={isNewPrompt} />
+          </div>
+        )}
       </div>
 
-      <InviteWelcomeBanner />
+      {/* The conversation itself: the only thing that scrolls. Typing in
+          the composer below or the keyboard opening on mobile never
+          moves this container's content, and there is nothing here that
+          pulls the reader back down once they have scrolled up. */}
+      <div ref={messageListRef} className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+        {circle.member_count < 3 && <WaitingRoomCard />}
 
-      {/* Progressive disclosure: brand new members (week1) see the prompt
-          and nothing else extra, so the circle feels calm rather than a
-          dashboard. Each layer below only earns its place once the
-          member has settled in a little, and the rhythm/educational
-          cards additionally only show once the circle itself has enough
-          activity to make them worth showing.
+        <InviteWelcomeBanner />
 
-          The Thursday/Friday rhythm card and the daily question both
-          play the same "something lighter for today" role, so only one
-          ever shows rather than stacking both. Both live outside the
-          sticky block above, so they scroll away with the rest of the
-          feed instead of permanently sitting above the messages. */}
-      {rhythm && tier === "week3plus" && thisWeek.length >= 3 ? (
-        <div className="mb-6">
-          <RhythmCard
-            accent={rhythm.accent}
-            label={rhythm.label}
-            content={rhythm.content}
-            onRespond={handleRespondToRhythm}
-          />
-        </div>
-      ) : (
-        tier !== "week1" && dailyQuestion && (
+        {/* Progressive disclosure: brand new members (week1) see the prompt
+            and nothing else extra, so the circle feels calm rather than a
+            dashboard. Each layer below only earns its place once the
+            member has settled in a little, and the rhythm/educational
+            cards additionally only show once the circle itself has enough
+            activity to make them worth showing.
+
+            The Thursday/Friday rhythm card and the daily question both
+            play the same "something lighter for today" role, so only one
+            ever shows rather than stacking both. */}
+        {rhythm && tier === "week3plus" && thisWeek.length >= 3 ? (
           <div className="mb-6">
-            <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
+            <RhythmCard
+              accent={rhythm.accent}
+              label={rhythm.label}
+              content={rhythm.content}
+              onRespond={handleRespondToRhythm}
+            />
           </div>
-        )
-      )}
-
-      {circle.member_count >= 2 && !hasIntroduced && (
-        <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
-      )}
-
-      {anniversary && !dismissedAnniversary && (
-        <AnniversaryBanner milestone={anniversary} onDismiss={dismissAnniversary} />
-      )}
-
-      {checkIn && (
-        <CheckInPrompt
-          userId={currentUser.id}
-          weeksIn={checkIn.weeksIn}
-          currentStage={checkIn.currentStage}
-        />
-      )}
-
-      {tier === "week3plus" && posts.length >= 5 && educationalContent && (
-        <EducationalCard title={educationalContent.title} content={educationalContent.content} />
-      )}
-
-      <div className="flex flex-col gap-6 pb-8">
-        {previousWeeks.length > 0 && (
-          <section>
-            <h2 className="mb-3 text-sm font-medium text-muted">Previous Weeks</h2>
-            <div className="flex flex-col gap-2">
-              {previousWeeks.map((week) => (
-                <WeekSection key={week.key} label={week.label} count={week.posts.length}>
-                  {week.posts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      currentUserId={currentUser.id}
-                      replyCount={repliesFor(post.id).length}
-                      reactionsFor={reactionsFor}
-                      readsFor={readsFor}
-                      onRead={recordRead}
-                      onDeleted={handleDeleted}
-                      onOpenThread={openThread}
-                    />
-                  ))}
-                </WeekSection>
-              ))}
+        ) : (
+          tier !== "week1" && dailyQuestion && (
+            <div className="mb-6">
+              <DailyQuestionCard question={dailyQuestion} onRespond={handleRespondToQuestion} />
             </div>
-          </section>
+          )
         )}
 
-        <section>
-          <h2 className="mb-3 text-sm font-medium text-muted">This Week</h2>
-          {thisWeek.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-muted">
-              No posts yet this week. Be the first to share something.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {thisWeek.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={currentUser.id}
-                  replyCount={repliesFor(post.id).length}
-                  reactionsFor={reactionsFor}
-                  readsFor={readsFor}
-                  onRead={recordRead}
-                  onDeleted={handleDeleted}
-                  onOpenThread={openThread}
-                />
-              ))}
-            </div>
+        {circle.member_count >= 2 && !hasIntroduced && (
+          <IntroductionCard onIntroduce={handleIntroduceMyself} onDismiss={markIntroduced} />
+        )}
+
+        {anniversary && !dismissedAnniversary && (
+          <AnniversaryBanner milestone={anniversary} onDismiss={dismissAnniversary} />
+        )}
+
+        {checkIn && (
+          <CheckInPrompt
+            userId={currentUser.id}
+            weeksIn={checkIn.weeksIn}
+            currentStage={checkIn.currentStage}
+          />
+        )}
+
+        {tier === "week3plus" && posts.length >= 5 && educationalContent && (
+          <EducationalCard title={educationalContent.title} content={educationalContent.content} />
+        )}
+
+        <div className="flex flex-col gap-6 pb-4">
+          {previousWeeks.length > 0 && (
+            <section>
+              <h2 className="mb-3 text-sm font-medium text-muted">Previous Weeks</h2>
+              <div className="flex flex-col gap-2">
+                {previousWeeks.map((week) => (
+                  <WeekSection key={week.key} label={week.label} count={week.posts.length}>
+                    {week.posts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        currentUserId={currentUser.id}
+                        replyCount={repliesFor(post.id).length}
+                        reactionsFor={reactionsFor}
+                        readsFor={readsFor}
+                        onRead={recordRead}
+                        onDeleted={handleDeleted}
+                        onEdited={handleEdited}
+                        onOpenThread={openThread}
+                      />
+                    ))}
+                  </WeekSection>
+                ))}
+              </div>
+            </section>
           )}
-        </section>
+
+          <section>
+            <h2 className="mb-3 text-sm font-medium text-muted">This Week</h2>
+            {thisWeek.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-muted">
+                No posts yet this week. Be the first to share something.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-5">
+                {thisWeek.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={currentUser.id}
+                    replyCount={repliesFor(post.id).length}
+                    reactionsFor={reactionsFor}
+                    readsFor={readsFor}
+                    onRead={recordRead}
+                    onDeleted={handleDeleted}
+                    onEdited={handleEdited}
+                    onOpenThread={openThread}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div ref={feedEndRef} />
       </div>
 
-      <div ref={feedEndRef} />
-
-      {/* Full-bleed opaque band so messages disappear cleanly behind the
-          composer instead of showing around the floating card, and an
-          explicit z-index so it always layers above the (static) posts. */}
-      <div
-        className="sticky z-30 -mx-4 bg-bg px-4 pb-4 pt-3 sm:-mx-6 sm:px-6"
-        style={{ bottom: keyboardOffset }}
-      >
+      {/* Composer: a normal element pinned at the bottom of this fixed
+          height column, not position:sticky and not positioned against
+          the keyboard by hand. The column's own height already responds
+          to the mobile keyboard opening (100dvh), so this just sits
+          right above it with no JS involved. */}
+      <div className="shrink-0 border-t border-border bg-bg px-4 py-3 sm:px-6">
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-lg shadow-black/30">
           <Composer
             circleId={circle.id}
@@ -577,12 +592,9 @@ export function CircleFeed({
     </div>
 
     {/* A fixed panel rather than a sticky flex sibling: fixed positioning
-        never depends on document flow or scroll position, which sidesteps
-        a real bug an earlier sticky-column version had (focusing the
-        thread's reply textarea triggered the browser's focus-scroll-into-
-        view behavior against the wrong scroll container and reset the
-        whole page to the top). Full width on mobile, 40% on desktop, with
-        the feed's own padding-right (set above) making room for it. */}
+        never depends on document flow or scroll position. Full width on
+        mobile, 40% on desktop, with the feed's own padding-right (set
+        above) making room for it. */}
     {activeThreadPost && (
       <div className="fixed inset-y-0 right-0 z-50 w-full border-l border-border bg-bg md:w-[40%]">
         <div className="animate-slide-in-right h-full">
@@ -595,6 +607,7 @@ export function CircleFeed({
             reactionsFor={reactionsFor}
             onClose={closeThread}
             onDeleted={handleDeleted}
+            onEdited={handleEdited}
             onReplyPosted={handleReplyPosted}
           />
         </div>
