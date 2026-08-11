@@ -217,6 +217,15 @@ export function Composer({
           placeholder={effectivePlaceholder}
           rows={parentId ? 2 : 3}
           autoFocus={autoFocus}
+          // Being inside a <form> with a submit button, mobile browsers
+          // otherwise infer the on-screen keyboard's return key should
+          // read "Go"/"Send", which dismisses the keyboard the instant
+          // it's tapped — regardless of our own onKeyDown handling.
+          // Explicitly hinting "enter" keeps it a plain return key, so
+          // submitting (via our own handler below) doesn't also close
+          // the keyboard, matching how Messenger keeps composing after
+          // you send.
+          enterKeyHint="enter"
           className="w-full flex-1 resize-none rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-faint focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
         />
       </div>
@@ -249,11 +258,17 @@ export function Composer({
             </svg>
           </button>
           {onCancel && (
-            <Button type="button" variant="ghost" onClick={onCancel}>
+            <Button type="button" variant="ghost" onMouseDown={(e) => e.preventDefault()} onClick={onCancel}>
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={isSubmitting || !content.trim()}>
+          {/* Tapping any other focusable element normally blurs the
+              textarea first (moving focus to the button), which is what
+              was dismissing the keyboard on Post. preventDefault on
+              mousedown (fired before the textarea would blur) keeps
+              focus in the textarea through the tap, so the keyboard
+              stays open and you can keep typing right away. */}
+          <Button type="submit" onMouseDown={(e) => e.preventDefault()} disabled={isSubmitting || !content.trim()}>
             {isSubmitting ? "Posting…" : parentId ? "Reply" : "Post"}
           </Button>
         </div>
