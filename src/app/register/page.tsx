@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { getCurrentUserAndProfile } from "@/lib/auth";
+import { LogoMark } from "@/app/_landing/LogoMark";
 import { RegisterForm } from "./RegisterForm";
 
 export const metadata = {
@@ -17,7 +19,11 @@ export default async function RegisterPage() {
   const invited = !!cookies().get("invite_token");
 
   return (
-    <main className="flex min-h-[calc(100vh-3rem)] items-center justify-center px-6 py-16">
+    <main className="flex min-h-[calc(100vh-3rem)] flex-col items-center justify-center gap-8 px-6 py-16">
+      <Link href="/" className="flex items-center gap-2.5">
+        <LogoMark className="h-8 w-8 text-accent" />
+        <span className="font-display text-xl text-ink">Between Us</span>
+      </Link>
       <div className="w-full max-w-sm">
         <RegisterForm invited={invited} />
       </div>
