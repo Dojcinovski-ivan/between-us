@@ -13,7 +13,7 @@ export default async function NewBlogPostPage() {
   const { user, profile } = await getCurrentUserAndProfile();
 
   if (!user) redirect("/login");
-  if (!profile || !profile.circle_id) redirect("/onboarding");
+  if (!profile) redirect("/onboarding");
   if (!profile.is_admin) redirect("/circle");
 
   return (

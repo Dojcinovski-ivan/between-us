@@ -15,7 +15,7 @@ export default async function EditBlogPostPage({ params }: { params: { id: strin
   const { user, profile } = await getCurrentUserAndProfile();
 
   if (!user) redirect("/login");
-  if (!profile || !profile.circle_id) redirect("/onboarding");
+  if (!profile) redirect("/onboarding");
   if (!profile.is_admin) redirect("/circle");
 
   const supabase = createClient();
