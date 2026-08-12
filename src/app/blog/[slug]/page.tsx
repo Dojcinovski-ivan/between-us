@@ -3,18 +3,22 @@ import { notFound } from "next/navigation";
 import { LandingNav } from "../../_landing/LandingNav";
 import { LandingFooter } from "../../_landing/LandingFooter";
 import { fraunces, karla } from "@/lib/fonts";
-import { getAllPosts, getPostBySlug, getRelatedPosts } from "@/lib/blog";
+import { getPostBySlug, getRelatedPosts } from "@/lib/blog";
 import { PostBody } from "../PostBody";
 import { BlogCard } from "../BlogCard";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenussupport.com";
 
-export function generateStaticParams() {
-  return getAllPosts().map((post) => ({ slug: post.slug }));
-}
+// Posts are database backed and editable from the admin panel: no
+// generateStaticParams (there's nothing to know at build time anymore),
+// and force-dynamic so a published post appears immediately without a
+// redeploy. This also happens to be exactly what lets an admin preview a
+// draft: the page always queries fresh, and RLS decides what a given
+// visitor is allowed to see.
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = getPostBySlug(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = await getPostBySlug(params.slug);
   if (!post) return {};
 
   const url = `${SITE_URL}/blog/${post.slug}`;
@@ -36,11 +40,11 @@ function formatDate(date: string): string {
   return new Date(date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = getPostBySlug(params.slug);
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const post = await getPostBySlug(params.slug);
   if (!post) notFound();
 
-  const related = getRelatedPosts(post);
+  const related = await getRelatedPosts(post);
 
   return (
     <main className={`landing-theme font-karla ${fraunces.variable} ${karla.variable}`}>
@@ -63,7 +67,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           {formatDate(post.date)} · {post.readTime}
         </p>
 
-        <PostBody content={post.body} />
+        <PostBody content={post.content} />
 
         <div className="mt-14 rounded-2xl bg-sage-soft p-6 text-center sm:p-8">
           <p className="text-base leading-relaxed text-ink">

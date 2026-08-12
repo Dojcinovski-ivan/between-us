@@ -11,8 +11,13 @@ export const metadata = {
     "Thoughts on healing, relationships, and finding your way back to yourself, from the Between Us community.",
 };
 
-export default function BlogIndexPage() {
-  const posts = getAllPosts();
+// Posts are now database backed and editable from the admin panel, so
+// this reads fresh on every request rather than only at build time —
+// publishing a post shows up immediately, with no redeploy needed.
+export const dynamic = "force-dynamic";
+
+export default async function BlogIndexPage() {
+  const posts = await getAllPosts();
 
   return (
     <main className={`landing-theme font-karla ${fraunces.variable} ${karla.variable}`}>

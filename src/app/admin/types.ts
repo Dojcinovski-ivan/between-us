@@ -33,3 +33,33 @@ export type Resource = {
   url: string | null;
   category: string | null;
 };
+
+export type DailyAdvice = {
+  id: string;
+  category: string;
+  content: string;
+};
+
+export type BlogPostSummary = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  published: boolean;
+  published_at: string | null;
+};
+
+export type BlogPostFull = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  meta_description: string;
+  category: string;
+  read_time: number;
+  published: boolean;
+  published_at: string | null;
+};
+
+export const BLOG_CATEGORIES = ["Understanding Trauma", "Relationships", "Healing", "Resources"] as const;

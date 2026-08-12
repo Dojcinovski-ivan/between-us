@@ -1,6 +1,5 @@
 import "server-only";
-import fs from "fs";
-import path from "path";
+import { createClient } from "@/lib/supabase/server";
 
 export type BlogPost = {
   slug: string;
@@ -9,53 +8,67 @@ export type BlogPost = {
   date: string;
   category: string;
   readTime: string;
-  body: string;
+  content: string;
 };
 
-const BLOG_DIR = path.join(process.cwd(), "content", "blog");
+function formatReadTime(minutes: number): string {
+  return `${minutes} min read`;
+}
 
-// Frontmatter here is deliberately simple, flat "key: value" lines
-// between --- markers, so a small hand written parser covers it
-// without pulling in a markdown/frontmatter library for three posts.
-function parsePost(raw: string): BlogPost {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) throw new Error("Blog post is missing frontmatter");
+type Row = {
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  read_time: number;
+  published_at: string | null;
+  created_at: string;
+};
 
-  const [, frontmatterBlock, body] = match;
-  const frontmatter: Record<string, string> = {};
-  for (const line of frontmatterBlock.split("\n")) {
-    const separatorIndex = line.indexOf(":");
-    if (separatorIndex === -1) continue;
-    const key = line.slice(0, separatorIndex).trim();
-    const value = line.slice(separatorIndex + 1).trim();
-    frontmatter[key] = value;
-  }
-
+function toBlogPost(row: Row): BlogPost {
   return {
-    slug: frontmatter.slug,
-    title: frontmatter.title,
-    excerpt: frontmatter.excerpt,
-    date: frontmatter.date,
-    category: frontmatter.category,
-    readTime: frontmatter.readTime,
-    body: body.trim(),
+    slug: row.slug,
+    title: row.title,
+    excerpt: row.excerpt,
+    date: row.published_at ?? row.created_at,
+    category: row.category,
+    readTime: formatReadTime(row.read_time),
+    content: row.content,
   };
 }
 
-export function getAllPosts(): BlogPost[] {
-  const files = fs.readdirSync(BLOG_DIR).filter((f) => f.endsWith(".md"));
-  const posts = files.map((file) => parsePost(fs.readFileSync(path.join(BLOG_DIR, file), "utf-8")));
-  return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+// Explicitly filtered to published posts regardless of who's asking, so
+// an admin's own drafts never show up in the public index, sitemap, or
+// related posts. getPostBySlug below deliberately has no such filter —
+// visibility there is left entirely to RLS, which is what lets an admin
+// open a draft's own URL as a live preview while everyone else gets a 404.
+export async function getAllPosts(): Promise<BlogPost[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("blog_posts")
+    .select("title, slug, excerpt, content, category, read_time, published_at, created_at")
+    .eq("published", true)
+    .order("published_at", { ascending: false });
+
+  return ((data as Row[] | null) ?? []).map(toBlogPost);
 }
 
-export function getPostBySlug(slug: string): BlogPost | null {
-  return getAllPosts().find((p) => p.slug === slug) ?? null;
+export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("blog_posts")
+    .select("title, slug, excerpt, content, category, read_time, published_at, created_at")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  return data ? toBlogPost(data as Row) : null;
 }
 
 // Same category first, filled out with the most recent other posts if
 // the category does not have enough on its own.
-export function getRelatedPosts(post: BlogPost, count = 2): BlogPost[] {
-  const others = getAllPosts().filter((p) => p.slug !== post.slug);
+export async function getRelatedPosts(post: BlogPost, count = 2): Promise<BlogPost[]> {
+  const others = (await getAllPosts()).filter((p) => p.slug !== post.slug);
   const sameCategory = others.filter((p) => p.category === post.category);
   const rest = others.filter((p) => p.category !== post.category);
   return [...sameCategory, ...rest].slice(0, count);

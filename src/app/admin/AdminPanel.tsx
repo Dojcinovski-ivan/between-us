@@ -5,19 +5,25 @@ import { ReportsQueue } from "./ReportsQueue";
 import { PromptsManager } from "./PromptsManager";
 import { StatsOverview } from "./StatsOverview";
 import { ResourcesManager } from "./ResourcesManager";
-import type { PendingReport, Prompt, Stats, Resource } from "./types";
+import { AdviceManager } from "./AdviceManager";
+import { BlogManager } from "./BlogManager";
+import type { PendingReport, Prompt, Stats, Resource, DailyAdvice, BlogPostSummary } from "./types";
 
-type Tab = "reports" | "prompts" | "resources" | "stats";
+type Tab = "reports" | "prompts" | "advice" | "resources" | "blog" | "stats";
 
 export function AdminPanel({
   initialReports,
   initialPrompts,
   initialResources,
+  initialAdvice,
+  initialBlogPosts,
   stats,
 }: {
   initialReports: PendingReport[];
   initialPrompts: Prompt[];
   initialResources: Resource[];
+  initialAdvice: DailyAdvice[];
+  initialBlogPosts: BlogPostSummary[];
   stats: Stats;
 }) {
   const [tab, setTab] = useState<Tab>("reports");
@@ -26,7 +32,9 @@ export function AdminPanel({
   const tabs: { id: Tab; label: string }[] = [
     { id: "reports", label: `Reports${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { id: "prompts", label: "Weekly Prompts" },
+    { id: "advice", label: "Daily Advice" },
     { id: "resources", label: "Resources" },
+    { id: "blog", label: "Blog" },
     { id: "stats", label: "Overview" },
   ];
 
@@ -53,7 +61,9 @@ export function AdminPanel({
         <ReportsQueue initialReports={initialReports} onCountChange={setPendingCount} />
       )}
       {tab === "prompts" && <PromptsManager initialPrompts={initialPrompts} />}
+      {tab === "advice" && <AdviceManager initialAdvice={initialAdvice} />}
       {tab === "resources" && <ResourcesManager initialResources={initialResources} />}
+      {tab === "blog" && <BlogManager initialPosts={initialBlogPosts} />}
       {tab === "stats" && <StatsOverview stats={stats} />}
     </div>
   );
