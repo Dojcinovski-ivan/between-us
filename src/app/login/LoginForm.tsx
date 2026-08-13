@@ -86,6 +86,10 @@ export function LoginForm({ inviteInvalid = false }: { inviteInvalid?: boolean }
           onChange={(e) => setPassword(e.target.value)}
         />
 
+        <Link href="/forgot-password" className="-mt-2 self-end text-xs text-sage hover:text-sage-hover">
+          Forgot password?
+        </Link>
+
         {error && <p className="text-sm text-warn">{error}</p>}
 
         <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
