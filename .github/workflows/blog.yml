@@ -1,0 +1,46 @@
+name: Between Us blog
+
+on:
+  schedule:
+    # Three times a day, UTC. GitHub can fire a few minutes late, which is fine.
+    - cron: '0 6 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    inputs:
+      posts:
+        description: How many posts to write in this run
+        default: '1'
+      auto_publish:
+        description: Publish live, or save everything as a draft
+        type: choice
+        options: ['true', 'false']
+        default: 'true'
+
+concurrency:
+  group: betweenus-blog
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate and publish
+        working-directory: blog-pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          POSTS_TABLE: blog_posts
+          MODEL: claude-sonnet-5
+          POSTS_PER_RUN: ${{ inputs.posts || '1' }}
+          AUTO_PUBLISH: ${{ inputs.auto_publish || 'true' }}
+        run: node generate.js
