@@ -42,5 +42,5 @@ jobs:
           POSTS_TABLE: blog_posts
           MODEL: claude-sonnet-5
           POSTS_PER_RUN: ${{ inputs.posts || '1' }}
-          AUTO_PUBLISH: ${{ inputs.auto_publish || 'true' }}
+          AUTO_PUBLISH: ${{ inputs.auto_publish || 'false' }}
         run: node generate.js
