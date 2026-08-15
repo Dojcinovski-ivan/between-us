@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { logClientError } from "@/lib/logError";
 import { isSameWeek, weekStart, formatWeekLabel } from "@/lib/time";
 import type { AnniversaryMilestone, CircleTenureTier } from "@/lib/time";
 import type { ReactionType } from "@/lib/reactions";
@@ -209,7 +210,18 @@ export function CircleFeed({
           setPosts((prev) => prev.filter((p) => p.id !== deletedId));
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // A dropped or timed-out channel means this member stops receiving
+        // other people's posts in real time. Log it (metadata only) so silent
+        // delivery failures become visible in the admin health view.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          logClientError("realtime", `channel ${status}`, {
+            route: "/circle",
+            circle_id: circle.id,
+            status,
+          });
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

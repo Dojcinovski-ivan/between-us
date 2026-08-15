@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCircleHealth, getRecentErrors } from "@/lib/circleHealth";
 import { weekStart } from "@/lib/time";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AdminPanel } from "./AdminPanel";
@@ -33,6 +34,8 @@ export default async function AdminPage() {
     { count: totalPosts },
     { count: pendingReports },
     { count: resolvedThisWeek },
+    health,
+    errors,
   ] = await Promise.all([
     supabase
       .from("reports")
@@ -64,6 +67,8 @@ export default async function AdminPage() {
       .select("*", { count: "exact", head: true })
       .neq("status", "pending")
       .gte("updated_at", thisWeekStart),
+    getCircleHealth(),
+    getRecentErrors(),
   ]);
 
   return (
@@ -92,6 +97,8 @@ export default async function AdminPage() {
             pendingReports: pendingReports ?? 0,
             resolvedThisWeek: resolvedThisWeek ?? 0,
           }}
+          health={health}
+          errors={errors}
         />
       </div>
     </main>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { logClientError } from "@/lib/logError";
 import { Button } from "@/components/ui/Button";
 import { EmojiPicker } from "./EmojiPicker";
 import type { Post } from "./types";
@@ -130,6 +131,14 @@ export function Composer({
 
     if (insertError || !data) {
       setError("Something went wrong posting that. Please try again.");
+      // Record the failure (metadata only — never the post content) so a
+      // pattern of failed sends shows up in the admin health view.
+      logClientError("post_create", insertError?.message ?? "insert returned no data", {
+        route: "/circle",
+        circle_id: circleId,
+        code: insertError?.code,
+        kind: parentId ? "reply" : "root",
+      });
       return;
     }
 
