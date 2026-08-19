@@ -22,13 +22,25 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // The reset link lands here with the recovery session encoded in the
-  // URL rather than a query param this page could read server side —
-  // supabase-js parses it client side and fires PASSWORD_RECOVERY once
-  // it's processed. getSession() is a fallback for the rare case where
-  // that already happened before this listener was attached. If neither
-  // fires within a few seconds, the link is treated as invalid/expired.
+  // Two ways in. Our own reset email links here with the recovery token
+  // as a query param, which is exchanged for a session explicitly below.
+  // A link from Supabase's built-in flow instead lands with the session
+  // in the URL fragment, which supabase-js parses client side before
+  // firing PASSWORD_RECOVERY — still handled so any link already sent
+  // that way keeps working.
   useEffect(() => {
+    const tokenHash = new URLSearchParams(window.location.search).get("token_hash");
+
+    if (tokenHash) {
+      supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash }).then(({ error }) => {
+        setStatus(error ? "invalid" : "ready");
+        // Drop the token from the URL once it's been spent, so it isn't
+        // left sitting in history or handed to anything the page loads.
+        window.history.replaceState(null, "", window.location.pathname);
+      });
+      return;
+    }
+
     const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setStatus("ready");
     });

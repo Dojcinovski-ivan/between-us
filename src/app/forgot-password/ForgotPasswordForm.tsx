@@ -2,27 +2,38 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
+import { requestPasswordReset } from "./actions";
 
 export function ForgotPasswordForm() {
-  const supabase = createClient();
-
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
 
-    await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    // Sent from the server so it goes out as a Between Us email rather
+    // than Supabase's default one — see sendPasswordResetEmail.
+    let ok = false;
+    try {
+      ({ ok } = await requestPasswordReset(email.trim()));
+    } catch {
+      ok = false;
+    }
 
     setIsSubmitting(false);
+
+    if (!ok) {
+      setError("We couldn't send that just now. Please try again in a moment.");
+      return;
+    }
+
     // Shown regardless of whether the email matches an account, so this
     // page can't be used to check which emails are registered.
     setSent(true);
@@ -60,6 +71,8 @@ export function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
+        {error && <p className="text-sm text-warn">{error}</p>}
 
         <Button type="submit" disabled={isSubmitting || !email.trim()} className="mt-2 w-full">
           {isSubmitting ? "Sending…" : "Send reset link"}

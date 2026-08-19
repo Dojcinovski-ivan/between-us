@@ -8,14 +8,16 @@ import { NewMemberEmail } from "@/emails/NewMemberEmail";
 import { WeeklyDigestEmail } from "@/emails/WeeklyDigestEmail";
 import { ReengagementEmail } from "@/emails/ReengagementEmail";
 import { ReportNotificationEmail } from "@/emails/ReportNotificationEmail";
+import { ResetPasswordEmail } from "@/emails/ResetPasswordEmail";
 import { circleName } from "@/lib/categories";
 import { signUnsubscribeToken } from "@/lib/unsubscribeToken";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Between Us <hello@betweenussupport.com>";
-const SITE_URL = "https://betweenussupport.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenussupport.com";
 const CIRCLE_URL = `${SITE_URL}/circle`;
 const ADMIN_URL = `${SITE_URL}/admin`;
+const RESET_URL = `${SITE_URL}/reset-password`;
 
 function unsubscribeUrl(userId: string) {
   const token = signUnsubscribeToken(userId);
@@ -45,6 +47,55 @@ export async function sendWelcomeEmail(userId: string) {
     });
   } catch {
     // Best effort. Onboarding itself must never fail because of this.
+  }
+}
+
+// Unlike everything else here this is not best effort — if it fails the
+// person is locked out — so it reports back whether the mail went out.
+// The caller still shows the same message either way, so the return value
+// only ever decides whether to offer a retry, never what the page says.
+export async function sendPasswordResetEmail(email: string) {
+  try {
+    const admin = createAdminClient();
+
+    // generateLink mints the recovery token without Supabase sending
+    // anything itself, so the only email that goes out is ours: our
+    // sender, our template, and a link on our own domain instead of the
+    // project's supabase.co URL.
+    // No redirectTo: the link Supabase builds is thrown away, only the
+    // token is used. Passing one would just add a way for this to fail
+    // whenever the URL isn't in the project's redirect allow list.
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email,
+    });
+
+    const tokenHash = data?.properties?.hashed_token;
+
+    // No account for this address, or Supabase's own rate limit kicked
+    // in. Neither is something the caller may reveal, so both look like
+    // an ordinary send from the outside.
+    if (error || !tokenHash) return true;
+
+    // /reset-password exchanges this for a session client side.
+    const resetUrl = `${RESET_URL}?token_hash=${encodeURIComponent(tokenHash)}`;
+
+    const { error: sendError } = await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: "Reset your Between Us password",
+      react: ResetPasswordEmail({ resetUrl }),
+    });
+
+    if (sendError) {
+      console.error("[password-reset] resend failed:", sendError);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("[password-reset] send failed:", err);
+    return false;
   }
 }
 
