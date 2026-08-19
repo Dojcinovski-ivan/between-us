@@ -3,40 +3,12 @@
 import { useEffect } from "react";
 import Script from "next/script";
 import { usePathname } from "next/navigation";
-import { PROTECTED_PATHS } from "@/lib/protectedPaths";
+import { trackPageView } from "@/lib/pixel";
 
 // Public identifier — it ships in the client bundle either way, so it is
 // a constant with an env override rather than a secret, same shape as
 // SITE_URL elsewhere.
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? "1378776633780688";
-
-declare global {
-  interface Window {
-    fbq?: (...args: unknown[]) => void;
-    __betweenUsPixelPath?: string;
-  }
-}
-
-// The last path counted, parked on window rather than in a ref because
-// this component remounts on navigation — a ref resets with it, which
-// silently dropped the PageView for every route after the first.
-function trackPageView(pathname: string | null) {
-  if (!pathname) return;
-
-  // Never from inside the logged in app. These are private support
-  // circles, and which one someone is reading is not something to hand
-  // to an ad network.
-  if (PROTECTED_PATHS.some((path) => pathname.startsWith(path))) return;
-
-  // Script hasn't executed yet — onReady fires this instead. Bailing out
-  // before the path is recorded is what makes that safe.
-  if (typeof window.fbq !== "function") return;
-
-  if (window.__betweenUsPixelPath === pathname) return;
-  window.__betweenUsPixelPath = pathname;
-
-  window.fbq("track", "PageView");
-}
 
 /**
  * Meta Pixel, mounted only by CookieConsent once analytics consent has

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 import { registerAccount } from "./actions";
+import { trackPixelEvent } from "@/lib/pixel";
 
 export function RegisterForm({ invited = false }: { invited?: boolean }) {
   const [email, setEmail] = useState("");
@@ -51,6 +52,11 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
       setError("We couldn't create your account just now. Please try again in a moment.");
       return;
     }
+
+    // Counted at the point the account is created, not after the email is
+    // confirmed: the confirmation lands on /onboarding, where the pixel
+    // deliberately does not run. A no-op for anyone who declined cookies.
+    trackPixelEvent("Lead");
 
     setCheckEmail(true);
   }
