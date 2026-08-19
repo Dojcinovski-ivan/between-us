@@ -1,18 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
+import { registerAccount } from "./actions";
 
 export function RegisterForm({ invited = false }: { invited?: boolean }) {
-  const router = useRouter();
-  const supabase = createClient();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,26 +31,28 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
     }
 
     setIsSubmitting(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { email_marketing_consent: marketingConsent },
-      },
-    });
+
+    // Created server side so the confirmation email comes from Between Us
+    // rather than Supabase — see sendSignupConfirmationEmail.
+    let status: "sent" | "exists" | "failed" = "failed";
+    try {
+      ({ status } = await registerAccount({ email, password, marketingConsent }));
+    } catch {
+      status = "failed";
+    }
+
     setIsSubmitting(false);
 
-    if (signUpError) {
-      setError(signUpError.message);
+    if (status === "exists") {
+      setError("There's already an account with that email. Try logging in instead.");
+      return;
+    }
+    if (status === "failed") {
+      setError("We couldn't create your account just now. Please try again in a moment.");
       return;
     }
 
-    if (data.session) {
-      router.push("/onboarding");
-      router.refresh();
-    } else {
-      setCheckEmail(true);
-    }
+    setCheckEmail(true);
   }
 
   if (checkEmail) {

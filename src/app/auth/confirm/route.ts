@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
+  // Signup confirmations carry the invite token so an invited account
+  // still lands in the right circle when the email is opened on a device
+  // that never saw the /invite cookie.
+  const inviteToken = searchParams.get("invite");
 
   if (tokenHash && type) {
     const supabase = createClient();
@@ -28,7 +32,21 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
 
         const destination = profile?.circle_id ? "/circle" : "/onboarding";
-        return NextResponse.redirect(new URL(destination, origin));
+        const response = NextResponse.redirect(new URL(destination, origin));
+
+        if (inviteToken) {
+          // Same shape as the cookie /invite sets, so onboarding cannot
+          // tell the two paths apart. Short lived: onboarding is the very
+          // next step from here.
+          response.cookies.set("invite_token", inviteToken, {
+            path: "/",
+            maxAge: 60 * 60,
+            httpOnly: true,
+            sameSite: "lax",
+          });
+        }
+
+        return response;
       }
     }
   }
