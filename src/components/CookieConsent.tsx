@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { PROTECTED_PATHS } from "@/lib/protectedPaths";
+import { MetaPixel } from "./MetaPixel";
 
 const COOKIE_NAME = "analytics_consent";
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -54,6 +55,11 @@ export function CookieConsent() {
   return (
     <>
       {consent === "true" && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+
+      {/* Held back on the logged in pages, unlike GA. An ad network
+          knowing someone is reading a particular support circle is a
+          different thing from counting how people find the site. */}
+      {consent === "true" && !isProtectedPage && <MetaPixel />}
 
       {showBanner && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg px-4 py-5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] sm:px-6">

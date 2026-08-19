@@ -101,19 +101,26 @@ export default function PrivacyPage() {
         <Heading>Cookies</Heading>
         <Paragraph>
           We use analytics cookies only with your consent, through Google
-          Analytics, to understand how people find and use Between Us. You
-          can accept or decline this the first time you visit, and you can
-          change your mind at any time by clicking Cookie settings in the
-          footer of the site.
+          Analytics and the Meta Pixel, to understand how people find and
+          use Between Us. You can accept or decline this the first time you
+          visit, and you can change your mind at any time by clicking
+          Cookie settings in the footer of the site.
+        </Paragraph>
+        <Paragraph>
+          The Meta Pixel runs only on our public pages, such as the home
+          page and the blog. It is never active inside your circle, your
+          profile, or anywhere else you are signed in, so what you read and
+          write inside the community is never shared with Meta.
         </Paragraph>
 
         <Heading>Who we share data with</Heading>
         <Paragraph>
           We work with a small number of trusted service providers to run
           Between Us. Supabase stores our database. Resend sends our
-          emails. Vercel hosts the website. Google Analytics helps us
-          understand usage, only with your consent. We never sell your
-          data to anyone, for any reason.
+          emails. Vercel hosts the website. Google Analytics and Meta help
+          us understand usage and how people find us, only with your
+          consent and only on our public pages. We never sell your data to
+          anyone, for any reason.
         </Paragraph>
 
         <Heading>Contact us</Heading>
