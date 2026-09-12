@@ -10,6 +10,7 @@ import type { ReactionType } from "@/lib/reactions";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PromptCard } from "./PromptCard";
+import { SparkCard } from "./SparkCard";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
 import { ThreadPanel } from "./ThreadPanel";
@@ -23,6 +24,7 @@ import { RhythmCard } from "./RhythmCard";
 import { WaitingRoomCard } from "./WaitingRoomCard";
 import { InviteWelcomeBanner } from "./InviteWelcomeBanner";
 import { MembersPanel } from "./MembersPanel";
+import type { Spark } from "@/lib/circleSparks";
 import type { Post, ReactionRow } from "./types";
 
 const MAIN_COMPOSER_ID = "composer-textarea";
@@ -44,6 +46,7 @@ export function CircleFeed({
   prompt,
   isNewPrompt,
   rhythm,
+  spark,
   initialPosts,
   initialReactions,
   initialReads,
@@ -62,6 +65,7 @@ export function CircleFeed({
   prompt: Prompt;
   isNewPrompt: boolean;
   rhythm: Rhythm;
+  spark: Spark | null;
   initialPosts: Post[];
   initialReactions: ReactionRow[];
   initialReads: ReadRow[];
@@ -408,6 +412,13 @@ export function CircleFeed({
 
   const activeThreadPost = activeThreadId ? (posts.find((p) => p.id === activeThreadId) ?? null) : null;
 
+  // Everyone in the circle except the viewer, for the composer's @ mention
+  // list. Mentioning yourself is not offered, and tells nobody.
+  const mentionableMembers = useMemo(
+    () => members.filter((m) => m.id !== currentUser.id),
+    [members, currentUser.id],
+  );
+
   return (
     <>
     <div
@@ -456,6 +467,15 @@ export function CircleFeed({
                 {dailyAdvice}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* A spark sits above the prompt for its 48 hour window, then
+            stops coming back on its own. When there is none, nothing
+            renders here and the header is exactly as it was. */}
+        {spark && (
+          <div className="px-4 pb-3 sm:px-6">
+            <SparkCard spark={spark} />
           </div>
         )}
 
@@ -597,6 +617,7 @@ export function CircleFeed({
               setComposerPrefill(null);
               handleTopLevelPosted(post);
             }}
+            mentionableMembers={mentionableMembers}
           />
         </div>
       </div>
@@ -621,6 +642,7 @@ export function CircleFeed({
             onDeleted={handleDeleted}
             onEdited={handleEdited}
             onReplyPosted={handleReplyPosted}
+            mentionableMembers={mentionableMembers}
           />
         </div>
       </div>

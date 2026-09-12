@@ -29,6 +29,37 @@ async function publishDraftIfAny(admin: ReturnType<typeof createAdminClient>, ci
 export type MatchCircleResult = { circleId: string; newMemberCount: number };
 
 /**
+ * Undoes the seat matchCircle reserved, by re-syncing member_count to the
+ * number of user rows that actually point at the circle.
+ *
+ * matchCircle increments the count before the caller has a profile row to
+ * put in it. If creating that row then fails, the seat would stay reserved
+ * for a member who does not exist, and the next attempt would reserve
+ * another one. That is what left circles reporting more members than they
+ * had, and eventually pushed one past MAX_CIRCLE_SIZE so no new member
+ * could ever be matched into it again.
+ *
+ * Recomputing from the user rows rather than decrementing is deliberate:
+ * it lands on the truth whether the circle was newly created or joined,
+ * and two callers racing here converge on the same answer instead of
+ * double subtracting.
+ */
+export async function releaseCircleSeat(circleId: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { count } = await admin
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("circle_id", circleId);
+
+    await admin.from("circles").update({ member_count: count ?? 0 }).eq("id", circleId);
+  } catch {
+    // Best effort. A failed release must never replace the error the
+    // caller is already reporting to the person in front of them.
+  }
+}
+
+/**
  * Circle assignment: category only. Joins the fullest circle in the
  * member's pod that still has room, so circles fill up rather than
  * spreading new members thin across many half empty ones. Creates a

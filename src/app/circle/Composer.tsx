@@ -5,6 +5,14 @@ import { createClient } from "@/lib/supabase/client";
 import { logClientError } from "@/lib/logError";
 import { Button } from "@/components/ui/Button";
 import { EmojiPicker } from "./EmojiPicker";
+import { MentionDropdown } from "./MentionDropdown";
+import { recordMentions } from "./mentionActions";
+import {
+  filterMentionCandidates,
+  findActiveMention,
+  type ActiveMention,
+  type MentionableMember,
+} from "@/lib/mentions";
 import type { Post } from "./types";
 
 const MAX_LENGTH = 1000;
@@ -30,6 +38,9 @@ type ComposerProps = {
   onSubmitted: (post: Post) => void;
   onCancel?: () => void;
   autoFocus?: boolean;
+  // Everyone in this circle except the viewer. Empty disables mentions
+  // entirely, so any caller that does not pass it behaves exactly as before.
+  mentionableMembers?: MentionableMember[];
 };
 
 export function Composer({
@@ -43,6 +54,7 @@ export function Composer({
   onSubmitted,
   onCancel,
   autoFocus = false,
+  mentionableMembers = [],
 }: ComposerProps) {
   const supabase = createClient();
   const [content, setContent] = useState("");
@@ -50,6 +62,8 @@ export function Composer({
   const [error, setError] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [mention, setMention] = useState<ActiveMention | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
 
   // Picked once per mount (a plain default parameter would re-roll on
   // every keystroke, since that re-renders the component), so the
@@ -97,6 +111,38 @@ export function Composer({
     };
   }, []);
 
+  // Recomputed per render rather than stored: the query and the member
+  // list are both already state, so a third copy could only go stale.
+  const mentionMatches = mention ? filterMentionCandidates(mentionableMembers, mention.query) : [];
+
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const value = e.target.value.slice(0, MAX_LENGTH);
+    setContent(value);
+    if (mentionableMembers.length === 0) return;
+    const caret = e.target.selectionStart ?? value.length;
+    setMention(findActiveMention(value, caret));
+    setMentionIndex(0);
+  }
+
+  function insertMention(member: MentionableMember) {
+    if (!mention) return;
+    const inserted = `@${member.username} `;
+    const next = (content.slice(0, mention.start) + inserted + content.slice(mention.end)).slice(
+      0,
+      MAX_LENGTH,
+    );
+    const cursor = mention.start + inserted.length;
+    setContent(next);
+    setMention(null);
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = content.trim();
@@ -143,12 +189,46 @@ export function Composer({
     }
 
     setContent("");
+    setMention(null);
     setShowToast(true);
     onClearPromptResponse?.();
     onSubmitted(data as Post);
+
+    // Records any @ mentions and tells the people named. Deliberately the
+    // last thing that happens, after the post is already saved and on
+    // screen, and never awaited: it cannot delay, block or fail a post.
+    void recordMentions((data as Post).id);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // While the mention list is open it owns these keys, so Enter picks a
+    // name instead of posting a half typed @qui. Everything below is
+    // untouched and runs exactly as before once the list is closed.
+    if (mention) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMention(null);
+        return;
+      }
+      if (mentionMatches.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setMentionIndex((i) => (i + 1) % mentionMatches.length);
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setMentionIndex((i) => (i - 1 + mentionMatches.length) % mentionMatches.length);
+          return;
+        }
+        if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          insertMention(mentionMatches[mentionIndex]);
+          return;
+        }
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       formRef.current?.requestSubmit();
@@ -202,7 +282,15 @@ export function Composer({
         </div>
       )}
 
-      <div ref={wrapperRef} className="flex items-start gap-2">
+      <div ref={wrapperRef} className="relative flex items-start gap-2">
+        {mention && (
+          <MentionDropdown
+            matches={mentionMatches}
+            activeIndex={mentionIndex}
+            onSelect={insertMention}
+          />
+        )}
+
         <div className="relative shrink-0 pt-1">
           <button
             type="button"
@@ -221,8 +309,12 @@ export function Composer({
           ref={textareaRef}
           id={textareaId}
           value={content}
-          onChange={(e) => setContent(e.target.value.slice(0, MAX_LENGTH))}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
+          // Selecting a name keeps focus in the textarea (the list
+          // preventDefaults its own mousedown), so a real blur always
+          // means the reader has moved on and the list should go.
+          onBlur={() => setMention(null)}
           placeholder={effectivePlaceholder}
           rows={parentId ? 2 : 3}
           autoFocus={autoFocus}

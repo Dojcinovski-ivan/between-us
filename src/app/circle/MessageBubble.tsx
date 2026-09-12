@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 import type { ReactionType } from "@/lib/reactions";
 import { ReactionPicker } from "./ReactionPicker";
+import { MentionText } from "./MentionText";
 
 function SmileyPlusIcon() {
   return (
@@ -60,7 +61,9 @@ export function MessageBubble({
         isOwnPost ? "rounded-br-md bg-accent text-accent-text" : "rounded-bl-md bg-surface2 text-ink"
       }`}
     >
-      <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+        <MentionText content={content} isOwnPost={isOwnPost} />
+      </p>
 
       {isHovering && !pickerOpen && (
         <button

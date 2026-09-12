@@ -5,6 +5,7 @@ import { weeksSince, isEligibleForCheckIn, anniversaryMilestone, absoluteWeekNum
 import { circleName } from "@/lib/categories";
 import { CircleFeed } from "./CircleFeed";
 import { WaitingRoom } from "./WaitingRoom";
+import type { Spark } from "@/lib/circleSparks";
 import type { Post, ReactionRow } from "./types";
 
 export async function generateMetadata() {
@@ -69,6 +70,7 @@ export default async function CirclePage() {
     { data: question },
     { data: rhythmRows },
     { data: members },
+    { data: spark },
   ] = await Promise.all([
     supabase
       .from("prompts")
@@ -120,6 +122,19 @@ export default async function CirclePage() {
       .from("users")
       .select("id, username, current_stage, created_at")
       .eq("circle_id", profile.circle_id),
+    // The newest spark still inside its window, if the team sent one. RLS
+    // already limits this table to live sparks in the reader's own circle,
+    // so the filters here only pick which one, never whether it is allowed.
+    // Returns null rather than throwing if the table is not there yet, so a
+    // partial deploy just shows the feed exactly as it looks today.
+    supabase
+      .from("circle_sparks")
+      .select("id, content, expires_at")
+      .eq("circle_id", profile.circle_id)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   const checkInEligible = isEligibleForCheckIn(profile.created_at, lastCheckIn?.created_at ?? null);
@@ -146,6 +161,7 @@ export default async function CirclePage() {
       prompt={prompt}
       isNewPrompt={isNewPrompt}
       rhythm={rhythm}
+      spark={(spark as Spark | null) ?? null}
       initialPosts={(posts as Post[]) ?? []}
       initialReactions={(reactions as ReactionRow[]) ?? []}
       initialReads={reads ?? []}

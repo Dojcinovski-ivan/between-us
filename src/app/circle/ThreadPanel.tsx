@@ -12,6 +12,8 @@ import { ReactionSummary } from "./ReactionSummary";
 import { useMessageReactions } from "./useMessageReactions";
 import { InlineEditor } from "./InlineEditor";
 import { StageDot } from "./StageDot";
+import { MentionText } from "./MentionText";
+import type { MentionableMember } from "@/lib/mentions";
 
 type ReactionData = { reactedTypes: ReactionType[]; counts: Record<ReactionType, number> };
 
@@ -152,6 +154,7 @@ export function ThreadPanel({
   onDeleted,
   onEdited,
   onReplyPosted,
+  mentionableMembers,
 }: {
   parent: Post;
   replies: Post[];
@@ -163,6 +166,7 @@ export function ThreadPanel({
   onDeleted: (postId: string) => void;
   onEdited: (postId: string, content: string, editedAt: string) => void;
   onReplyPosted: (reply: Post) => void;
+  mentionableMembers: MentionableMember[];
 }) {
   const isOwnParent = parent.user_id === currentUserId;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -239,7 +243,9 @@ export function ThreadPanel({
               {parent.edited_at && " · Edited"}
             </span>
           </div>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">{parent.content}</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+            <MentionText content={parent.content} isOwnPost={false} />
+          </p>
         </div>
 
         <div className="mt-5 flex flex-col gap-4">
@@ -266,6 +272,7 @@ export function ThreadPanel({
           parentId={parent.id}
           placeholder="Reply in thread…"
           onSubmitted={onReplyPosted}
+          mentionableMembers={mentionableMembers}
         />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { categoryLabel } from "@/lib/categories";
 import type { CircleHealth, CircleHealthRow, ErrorLogRow } from "@/lib/circleHealth";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -8,13 +9,6 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const SILENT_AFTER_DAYS = 7;
-
-function humanCategory(slug: string) {
-  return slug
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 function relTime(ts: string | null) {
   if (!ts) return "never";
@@ -88,7 +82,7 @@ export function HealthOverview({ health, errors }: { health: CircleHealth; error
                 return (
                   <tr key={c.id} className="border-b border-border/50 last:border-0">
                     <td className="px-3 py-2 text-ink">
-                      {humanCategory(c.category)}
+                      {categoryLabel(c.category)}
                       {state && <span className={`ml-2 text-xs ${state.tone}`}>· {state.label}</span>}
                     </td>
                     <td className="px-3 py-2 text-right text-muted">{c.members}</td>

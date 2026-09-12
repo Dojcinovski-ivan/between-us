@@ -10,6 +10,7 @@ import { ReengagementEmail } from "@/emails/ReengagementEmail";
 import { ReportNotificationEmail } from "@/emails/ReportNotificationEmail";
 import { ResetPasswordEmail } from "@/emails/ResetPasswordEmail";
 import { ConfirmSignupEmail } from "@/emails/ConfirmSignupEmail";
+import { MentionEmail } from "@/emails/MentionEmail";
 import { circleName } from "@/lib/categories";
 import { signUnsubscribeToken } from "@/lib/unsubscribeToken";
 
@@ -341,5 +342,29 @@ export async function sendReengagementEmail(userId: string) {
       .eq("id", userId);
   } catch {
     // Best effort.
+  }
+}
+
+// Tells someone they were named in a post. Gated by the caller on
+// email_marketing_consent, the same column the re-engagement cron selects
+// on, and carries the unsubscribe link because of it.
+export async function sendMentionEmail(mentionedUserId: string, mentionerUsername: string) {
+  try {
+    const admin = createAdminClient();
+    const email = await getUserEmail(admin, mentionedUserId);
+    if (!email) return;
+
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: "Someone mentioned you in your circle",
+      react: MentionEmail({
+        mentionerUsername,
+        circleUrl: CIRCLE_URL,
+        unsubscribeUrl: unsubscribeUrl(mentionedUserId),
+      }),
+    });
+  } catch {
+    // Best effort. A mention must never fail because of an email.
   }
 }

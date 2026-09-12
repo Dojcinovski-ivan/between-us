@@ -12,7 +12,7 @@ import { AGE_RANGES } from "@/lib/ageRanges";
 import { GENDERS } from "@/lib/genders";
 import { COUNTRIES } from "@/lib/countries";
 import { derivePodCategory } from "@/lib/matchPod";
-import { matchCircle } from "@/lib/matchCircle";
+import { matchCircle, releaseCircleSeat } from "@/lib/matchCircle";
 import { sendWelcomeEmail, sendCircleFormedEmail, sendNewMemberEmail } from "@/lib/email";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
@@ -67,11 +67,29 @@ export async function completeOnboarding(input: OnboardingInput) {
     return { error: "Please choose your country." };
   }
 
+  const admin = createAdminClient();
+
   const category = derivePodCategory({
     feltExperience: feltExperience.slug,
     whoWasIt: whoWasIt.slug,
     mechanisms: input.mechanisms as (typeof MECHANISMS)[number]["slug"][],
   });
+
+  // Checked before matching, because matchCircle reserves a seat in a
+  // circle and a taken username is by far the most common reason the
+  // profile insert below fails. Failing here costs one read and leaves
+  // the circles table untouched. The insert is still the real authority:
+  // two people claiming the same name at once both pass this check, and
+  // the unique constraint settles it.
+  const { data: nameTaken } = await admin
+    .from("users")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  if (nameTaken) {
+    return { error: "That username is already taken. Try another." };
+  }
 
   const matchResult = await matchCircle(category).catch(() => null);
 
@@ -84,7 +102,6 @@ export async function completeOnboarding(input: OnboardingInput) {
   // row itself is not created until now, at the end of onboarding.
   const emailMarketingConsent = user.user_metadata?.email_marketing_consent === true;
 
-  const admin = createAdminClient();
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
     username,
@@ -102,6 +119,11 @@ export async function completeOnboarding(input: OnboardingInput) {
   });
 
   if (insertError) {
+    // The seat matchCircle reserved above belongs to nobody now, so give
+    // it back. Without this the circle keeps counting a member that was
+    // never created, and each retry reserves another one.
+    await releaseCircleSeat(circleId);
+
     if (insertError.code === "23505") {
       return { error: "That username is already taken. Try another." };
     }

@@ -3,10 +3,15 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCircleHealth, getRecentErrors } from "@/lib/circleHealth";
+import { getCategoryOptions } from "@/lib/categoryOptions";
 import { weekStart } from "@/lib/time";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AdminPanel } from "./AdminPanel";
 import type { PendingReport, Prompt, Resource, DailyAdvice, BlogPostSummary } from "./types";
+
+// The category dropdowns and circle health are read from the database on
+// every load, so a circle that formed a minute ago is already selectable.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Admin — Between Us",
@@ -36,6 +41,7 @@ export default async function AdminPage() {
     { count: resolvedThisWeek },
     health,
     errors,
+    categoryOptions,
   ] = await Promise.all([
     supabase
       .from("reports")
@@ -69,6 +75,7 @@ export default async function AdminPage() {
       .gte("updated_at", thisWeekStart),
     getCircleHealth(),
     getRecentErrors(),
+    getCategoryOptions(),
   ]);
 
   return (
@@ -99,6 +106,7 @@ export default async function AdminPage() {
           }}
           health={health}
           errors={errors}
+          categoryOptions={categoryOptions}
         />
       </div>
     </main>

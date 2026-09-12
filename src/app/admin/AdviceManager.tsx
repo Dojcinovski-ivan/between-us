@@ -2,15 +2,22 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORIES, categoryLabel, type CategorySlug } from "@/lib/categories";
+import { categoryLabel, type CategoryOption } from "@/lib/categories";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CategorySelect } from "./CategorySelect";
 import type { DailyAdvice } from "./types";
 
-export function AdviceManager({ initialAdvice }: { initialAdvice: DailyAdvice[] }) {
+export function AdviceManager({
+  initialAdvice,
+  categoryOptions,
+}: {
+  initialAdvice: DailyAdvice[];
+  categoryOptions: CategoryOption[];
+}) {
   const supabase = createClient();
   const [advice, setAdvice] = useState(initialAdvice);
-  const [category, setCategory] = useState<CategorySlug>(CATEGORIES[0].slug);
+  const [category, setCategory] = useState(categoryOptions[0]?.slug ?? "");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,17 +64,7 @@ export function AdviceManager({ initialAdvice }: { initialAdvice: DailyAdvice[] 
         <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-muted">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as CategorySlug)}
-              className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <CategorySelect value={category} onChange={setCategory} options={categoryOptions} />
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-muted">Advice</label>
@@ -80,7 +77,11 @@ export function AdviceManager({ initialAdvice }: { initialAdvice: DailyAdvice[] 
             />
           </div>
           {error && <p className="text-sm text-warn">{error}</p>}
-          <Button type="submit" disabled={isSubmitting || !content.trim()} className="w-fit">
+          <Button
+            type="submit"
+            disabled={isSubmitting || !content.trim() || !category}
+            className="w-fit"
+          >
             {isSubmitting ? "Saving…" : "Add advice"}
           </Button>
         </form>

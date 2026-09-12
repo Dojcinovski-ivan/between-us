@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORIES, categoryLabel } from "@/lib/categories";
+import { categoryLabel, type CategoryOption } from "@/lib/categories";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CategorySelect } from "./CategorySelect";
 import type { Resource } from "./types";
 
 const RESOURCE_TYPES = [
@@ -13,7 +14,13 @@ const RESOURCE_TYPES = [
   { value: "crisis", label: "Crisis" },
 ];
 
-export function ResourcesManager({ initialResources }: { initialResources: Resource[] }) {
+export function ResourcesManager({
+  initialResources,
+  categoryOptions,
+}: {
+  initialResources: Resource[];
+  categoryOptions: CategoryOption[];
+}) {
   const supabase = createClient();
   const [resources, setResources] = useState(initialResources);
   const [title, setTitle] = useState("");
@@ -110,18 +117,13 @@ export function ResourcesManager({ initialResources }: { initialResources: Resou
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-muted">Category (optional)</label>
-            <select
+            <CategorySelect
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
-            >
-              <option value="">General — all circles</option>
-              {CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              onChange={setCategory}
+              options={categoryOptions}
+              includeAll
+              allLabel="General — all circles"
+            />
           </div>
 
           {error && <p className="text-xs text-warn">{error}</p>}

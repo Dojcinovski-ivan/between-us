@@ -8,10 +8,12 @@ import { ResourcesManager } from "./ResourcesManager";
 import { AdviceManager } from "./AdviceManager";
 import { BlogManager } from "./BlogManager";
 import { HealthOverview } from "./HealthOverview";
+import { CirclesManager } from "./CirclesManager";
 import type { PendingReport, Prompt, Stats, Resource, DailyAdvice, BlogPostSummary } from "./types";
 import type { CircleHealth, ErrorLogRow } from "@/lib/circleHealth";
+import type { CategoryOption } from "@/lib/categories";
 
-type Tab = "reports" | "health" | "prompts" | "advice" | "resources" | "blog" | "stats";
+type Tab = "reports" | "health" | "circles" | "prompts" | "advice" | "resources" | "blog" | "stats";
 
 export function AdminPanel({
   initialReports,
@@ -22,6 +24,7 @@ export function AdminPanel({
   stats,
   health,
   errors,
+  categoryOptions,
 }: {
   initialReports: PendingReport[];
   initialPrompts: Prompt[];
@@ -31,6 +34,7 @@ export function AdminPanel({
   stats: Stats;
   health: CircleHealth;
   errors: ErrorLogRow[];
+  categoryOptions: CategoryOption[];
 }) {
   const [tab, setTab] = useState<Tab>("reports");
   const [pendingCount, setPendingCount] = useState(initialReports.length);
@@ -38,6 +42,7 @@ export function AdminPanel({
   const tabs: { id: Tab; label: string }[] = [
     { id: "reports", label: `Reports${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { id: "health", label: "Circle Health" },
+    { id: "circles", label: "Circles" },
     { id: "prompts", label: "Weekly Prompts" },
     { id: "advice", label: "Daily Advice" },
     { id: "resources", label: "Resources" },
@@ -68,9 +73,16 @@ export function AdminPanel({
         <ReportsQueue initialReports={initialReports} onCountChange={setPendingCount} />
       )}
       {tab === "health" && <HealthOverview health={health} errors={errors} />}
-      {tab === "prompts" && <PromptsManager initialPrompts={initialPrompts} />}
-      {tab === "advice" && <AdviceManager initialAdvice={initialAdvice} />}
-      {tab === "resources" && <ResourcesManager initialResources={initialResources} />}
+      {tab === "circles" && <CirclesManager />}
+      {tab === "prompts" && (
+        <PromptsManager initialPrompts={initialPrompts} categoryOptions={categoryOptions} />
+      )}
+      {tab === "advice" && (
+        <AdviceManager initialAdvice={initialAdvice} categoryOptions={categoryOptions} />
+      )}
+      {tab === "resources" && (
+        <ResourcesManager initialResources={initialResources} categoryOptions={categoryOptions} />
+      )}
       {tab === "blog" && <BlogManager initialPosts={initialBlogPosts} />}
       {tab === "stats" && <StatsOverview stats={stats} />}
     </div>

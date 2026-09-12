@@ -43,6 +43,17 @@ export const CATEGORIES = [
 
 export type CategorySlug = (typeof CATEGORIES)[number]["slug"];
 
+// A category the admin screens can write content for, with how much of the
+// app is actually living in it. Built from the live circles table by
+// getCategoryOptions() in @/lib/categoryOptions, so the slug is a plain
+// string — it is not necessarily one of the pods above.
+export type CategoryOption = {
+  slug: string;
+  label: string;
+  circles: number;
+  members: number;
+};
+
 export function isValidCategory(value: string): value is CategorySlug {
   return CATEGORIES.some((c) => c.slug === value);
 }

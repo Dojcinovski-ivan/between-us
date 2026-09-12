@@ -2,16 +2,23 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORIES, categoryLabel, type CategorySlug } from "@/lib/categories";
+import { categoryLabel, type CategoryOption } from "@/lib/categories";
 import { nextMonday, toDateInputValue } from "@/lib/time";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CategorySelect } from "./CategorySelect";
 import type { Prompt } from "./types";
 
-export function PromptsManager({ initialPrompts }: { initialPrompts: Prompt[] }) {
+export function PromptsManager({
+  initialPrompts,
+  categoryOptions,
+}: {
+  initialPrompts: Prompt[];
+  categoryOptions: CategoryOption[];
+}) {
   const supabase = createClient();
   const [prompts, setPrompts] = useState(initialPrompts);
-  const [category, setCategory] = useState<CategorySlug>(CATEGORIES[0].slug);
+  const [category, setCategory] = useState(categoryOptions[0]?.slug ?? "");
   const [weekStart, setWeekStart] = useState(toDateInputValue(nextMonday()));
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,17 +62,7 @@ export function PromptsManager({ initialPrompts }: { initialPrompts: Prompt[] })
         <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-muted">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as CategorySlug)}
-              className="rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink focus:border-sage focus:outline-none focus:ring-1 focus:ring-sage"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <CategorySelect value={category} onChange={setCategory} options={categoryOptions} />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -91,7 +88,11 @@ export function PromptsManager({ initialPrompts }: { initialPrompts: Prompt[] })
 
           {error && <p className="text-xs text-warn">{error}</p>}
 
-          <Button type="submit" disabled={isSubmitting || !content.trim()} className="w-fit">
+          <Button
+            type="submit"
+            disabled={isSubmitting || !content.trim() || !category}
+            className="w-fit"
+          >
             {isSubmitting ? "Creating…" : "Create prompt"}
           </Button>
         </form>
