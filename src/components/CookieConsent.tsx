@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { PROTECTED_PATHS } from "@/lib/protectedPaths";
 import { MetaPixel } from "./MetaPixel";
+import { XPixel } from "./XPixel";
 
 const COOKIE_NAME = "analytics_consent";
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -60,6 +61,7 @@ export function CookieConsent() {
           knowing someone is reading a particular support circle is a
           different thing from counting how people find the site. */}
       {consent === "true" && !isProtectedPage && <MetaPixel />}
+      {consent === "true" && !isProtectedPage && <XPixel />}
 
       {showBanner && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg px-4 py-5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] sm:px-6">
