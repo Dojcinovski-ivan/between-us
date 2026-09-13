@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 import { registerAccount } from "./actions";
-import { trackPixelEvent } from "@/lib/pixel";
+import { trackPixelEvent, trackXEvent, X_EVENTS } from "@/lib/pixel";
 
 export function RegisterForm({ invited = false }: { invited?: boolean }) {
   const [email, setEmail] = useState("");
@@ -57,6 +57,7 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
     // confirmed: the confirmation lands on /onboarding, where the pixel
     // deliberately does not run. A no-op for anyone who declined cookies.
     trackPixelEvent("Lead");
+    trackXEvent(X_EVENTS.signUp);
 
     setCheckEmail(true);
   }

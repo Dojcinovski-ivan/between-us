@@ -3,9 +3,25 @@ import { PROTECTED_PATHS } from "@/lib/protectedPaths";
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void;
+    twq?: (...args: unknown[]) => void;
     __betweenUsPixelPath?: string;
   }
 }
+
+// X identifies a conversion by an opaque ID minted in Events Manager
+// rather than by a standard name the way Meta does, so the IDs live here
+// instead of at each call site. Public identifiers, same reasoning as the
+// pixel IDs themselves, with env overrides so they can be repointed
+// without a deploy.
+export const X_EVENTS = {
+  // Fires on /register the moment the account is created. Counts everyone
+  // who signed up, including those who never finish onboarding.
+  signUp: process.env.NEXT_PUBLIC_X_EVENT_SIGN_UP ?? "tw-rf8km-rf8kz",
+  // Created in Events Manager but not fired yet. Joining a circle happens
+  // on /onboarding, a protected path where no pixel is mounted, so this
+  // needs either X's conversion API or a decision to run the pixel there.
+  joinedCircle: process.env.NEXT_PUBLIC_X_EVENT_JOINED_CIRCLE ?? "tw-rf8km-rf8l1",
+} as const;
 
 // fbq only exists once MetaPixel has mounted, and MetaPixel only mounts
 // once analytics consent has been given. Everything here is therefore a
@@ -46,4 +62,25 @@ export function trackPageView(pathname: string | null) {
 export function trackPixelEvent(event: string) {
   if (!pixelReady()) return;
   window.fbq!("track", event);
+}
+
+// twq only exists once XPixel has mounted, and XPixel only mounts once
+// analytics consent has been given, so this is a no-op without consent in
+// exactly the same way fbq is.
+function xPixelReady(): boolean {
+  return typeof window !== "undefined" && typeof window.twq === "function";
+}
+
+/**
+ * Fires an X conversion event by its event ID.
+ *
+ * Sends an empty parameter object on purpose. X offers email address and
+ * phone number as optional event parameters, and neither is something
+ * this app hands to an ad network, for the same reason trackPixelEvent
+ * attaches nothing: the event carries that something happened, and
+ * nothing about who it happened to.
+ */
+export function trackXEvent(eventId: string) {
+  if (!xPixelReady()) return;
+  window.twq!("event", eventId, {});
 }
