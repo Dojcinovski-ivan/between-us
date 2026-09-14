@@ -134,7 +134,11 @@ export function CirclesManager() {
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <div className="flex gap-2">
+                      {/* Stacked rather than side by side: the admin page is
+                          max-w-3xl, and two buttons on one line pushed this
+                          table 80px wider than its container, which clipped
+                          Send spark off the right edge. */}
+                      <div className="flex flex-col gap-2">
                         <button
                           type="button"
                           onClick={() => setJoining(c)}
