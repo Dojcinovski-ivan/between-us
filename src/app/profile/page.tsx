@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/SignOutButton";
 import { BioEditor } from "./BioEditor";
 import { EmailPreferences } from "./EmailPreferences";
+import { DataAndAccount } from "./DataAndAccount";
 
 export const metadata = {
   title: "Your Profile — Between Us",
@@ -58,7 +59,21 @@ export default async function ProfilePage() {
             initialConsent={profile.email_marketing_consent ?? false}
           />
         </div>
+
+        <div className="mt-5 border-t border-border pt-5">
+          <DataAndAccount />
+        </div>
       </Card>
+
+      <p className="mt-6 text-center text-xs text-faint">
+        <Link href="/privacy" className="hover:text-muted">
+          Privacy Policy
+        </Link>
+        {" · "}
+        <Link href="/terms" className="hover:text-muted">
+          Terms
+        </Link>
+      </p>
     </main>
   );
 }

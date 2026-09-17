@@ -11,6 +11,7 @@ import { ReportNotificationEmail } from "@/emails/ReportNotificationEmail";
 import { ResetPasswordEmail } from "@/emails/ResetPasswordEmail";
 import { ConfirmSignupEmail } from "@/emails/ConfirmSignupEmail";
 import { MentionEmail } from "@/emails/MentionEmail";
+import { BlogReviewEmail } from "@/emails/BlogReviewEmail";
 import { circleName } from "@/lib/categories";
 import { signUnsubscribeToken } from "@/lib/unsubscribeToken";
 
@@ -102,7 +103,10 @@ export async function sendPasswordResetEmail(email: string) {
   }
 }
 
-export type SignupResult = "sent" | "exists" | "failed";
+// "underage" is returned by the register action before any account is
+// created, so it never reaches the mail path below — it lives on this type
+// so the form has one result shape to switch on.
+export type SignupResult = "sent" | "exists" | "failed" | "underage";
 
 /**
  * Creates the account and sends our own confirmation email.
@@ -135,8 +139,15 @@ export async function sendSignupConfirmationEmail({
       email,
       password,
       // Read back off user_metadata when the profile row is created in
-      // onboarding — see completeOnboarding.
-      options: { data: { email_marketing_consent: marketingConsent } },
+      // onboarding — see completeOnboarding. age_confirmed_at records that
+      // the eighteen or over check passed at registration; the date of
+      // birth behind it was never stored anywhere.
+      options: {
+        data: {
+          email_marketing_consent: marketingConsent,
+          age_confirmed_at: new Date().toISOString(),
+        },
+      },
     });
 
     if (error) {
@@ -270,6 +281,9 @@ export async function sendWeeklyDigest() {
     .from("users")
     .select("id, category, circle_id")
     .eq("email_marketing_consent", true)
+    // Erased accounts keep an anonymised row, so exclude them or the
+    // digest keeps going out to a mailbox nobody owns any more.
+    .is("deleted_at", null)
     .not("circle_id", "is", null);
 
   await Promise.allSettled(
@@ -366,5 +380,34 @@ export async function sendMentionEmail(mentionedUserId: string, mentionerUsernam
     });
   } catch {
     // Best effort. A mention must never fail because of an email.
+  }
+}
+
+// Part of the autonomous blog pipeline: a generated post that trips the
+// safety gate is saved as a draft instead of going live, and this is how
+// anyone finds out it is waiting. Best effort like the rest, since a dead
+// Resend key must not turn a held post into a failed run.
+export async function sendBlogReviewNotification({
+  topicTitle,
+  failureReason,
+  postId,
+}: {
+  topicTitle: string;
+  failureReason: string;
+  postId: string;
+}) {
+  try {
+    await resend.emails.send({
+      from: FROM,
+      to: "hello@betweenussupport.com",
+      subject: "Blog post needs review — failed quality check",
+      react: BlogReviewEmail({
+        topicTitle,
+        failureReason,
+        editUrl: `${ADMIN_URL}/blog/${postId}/edit`,
+      }),
+    });
+  } catch {
+    // Best effort. The post is already safely saved as a draft.
   }
 }

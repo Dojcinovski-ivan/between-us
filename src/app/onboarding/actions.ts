@@ -26,6 +26,7 @@ type OnboardingInput = {
   ageRange: string;
   gender: string;
   country: string;
+  sensitiveConsent: boolean;
 };
 
 export async function completeOnboarding(input: OnboardingInput) {
@@ -67,6 +68,14 @@ export async function completeOnboarding(input: OnboardingInput) {
     return { error: "Please choose your country." };
   }
 
+  // The Article 9 gate, re-checked here because a server action is a plain
+  // request anyone can shape and the wizard's disabled button is not a
+  // control. Without this consent none of the sensitive fields below may
+  // be written at all, so the profile is refused rather than saved partly.
+  if (input.sensitiveConsent !== true) {
+    return { error: "We need your permission to hold your answers before we can match you to a circle." };
+  }
+
   const admin = createAdminClient();
 
   const category = derivePodCategory({
@@ -102,6 +111,14 @@ export async function completeOnboarding(input: OnboardingInput) {
   // row itself is not created until now, at the end of onboarding.
   const emailMarketingConsent = user.user_metadata?.email_marketing_consent === true;
 
+  // Written at registration by sendSignupConfirmationEmail, after the date
+  // of birth check passed. The date of birth itself was never stored.
+  const ageConfirmedAt =
+    typeof user.user_metadata?.age_confirmed_at === "string"
+      ? user.user_metadata.age_confirmed_at
+      : null;
+  const now = new Date().toISOString();
+
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
     username,
@@ -115,7 +132,10 @@ export async function completeOnboarding(input: OnboardingInput) {
     gender: input.gender,
     country: input.country,
     email_marketing_consent: emailMarketingConsent,
-    email_marketing_consent_date: emailMarketingConsent ? new Date().toISOString() : null,
+    email_marketing_consent_date: emailMarketingConsent ? now : null,
+    // Article 7(1): the record that makes the consent demonstrable.
+    special_category_consent_at: now,
+    age_confirmed_at: ageConfirmedAt,
   });
 
   if (insertError) {
@@ -194,6 +214,9 @@ export async function completeInviteOnboarding(rawUsername: string) {
     return { error: "This invite link is no longer valid." };
   }
 
+  // No Article 9 consent is recorded here because this path asks none of
+  // the sensitive questions: the values below are placeholders, not
+  // answers the person gave about their own experiences.
   const { error: insertError } = await admin.from("users").insert({
     id: user.id,
     username,
@@ -202,6 +225,10 @@ export async function completeInviteOnboarding(rawUsername: string) {
     age_range: "25_34",
     gender: "prefer_not_to_say",
     country: "other",
+    age_confirmed_at:
+      typeof user.user_metadata?.age_confirmed_at === "string"
+        ? user.user_metadata.age_confirmed_at
+        : null,
   });
 
   if (insertError) {

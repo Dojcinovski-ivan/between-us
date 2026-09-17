@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { LogoMark } from "@/app/_landing/LogoMark";
 import { LoginForm } from "./LoginForm";
+import { MinimalLegalLinks } from "@/components/MinimalLegalLinks";
 
 export const metadata = {
   title: "Log In — Between Us",
@@ -28,6 +29,7 @@ export default async function LoginPage({
       <div className="w-full max-w-sm">
         <LoginForm inviteInvalid={searchParams.invite === "invalid"} />
       </div>
+      <MinimalLegalLinks />
     </main>
   );
 }

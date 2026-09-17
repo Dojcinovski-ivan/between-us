@@ -1,4 +1,5 @@
 import { PROTECTED_PATHS } from "@/lib/protectedPaths";
+import { NO_ADVERTISING_PATHS } from "@/lib/consent";
 
 declare global {
   interface Window {
@@ -38,8 +39,10 @@ export function trackPageView(pathname: string | null) {
 
   // Never from inside the logged in app. These are private support
   // circles, and which one someone is reading is not something to hand
-  // to an ad network.
+  // to an ad network. Also never on sign up, log in or the auth flows,
+  // where the pageview alone says something about the person's health.
   if (PROTECTED_PATHS.some((path) => pathname.startsWith(path))) return;
+  if (NO_ADVERTISING_PATHS.some((path) => pathname.startsWith(path))) return;
 
   // Script hasn't executed yet — MetaPixel's onReady fires this instead.
   // Bailing out before the path is recorded is what makes that safe.

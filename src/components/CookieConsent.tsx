@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { PROTECTED_PATHS } from "@/lib/protectedPaths";
+import { NO_ADVERTISING_PATHS, readConsent, writeConsent } from "@/lib/consent";
 import { MetaPixel } from "./MetaPixel";
 import { XPixel } from "./XPixel";
 
-const COOKIE_NAME = "analytics_consent";
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 // Fired by the "Cookie settings" footer link so this component (mounted
@@ -15,77 +16,169 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 // reload, from wherever in the tree that link happens to render.
 export const REOPEN_COOKIE_BANNER_EVENT = "reopen-cookie-banner";
 
-function readConsentCookie(): "true" | "false" | null {
-  const match = document.cookie.match(/(?:^|; )analytics_consent=([^;]*)/);
-  if (!match) return null;
-  return match[1] === "true" ? "true" : match[1] === "false" ? "false" : null;
-}
-
-function writeConsentCookie(value: "true" | "false") {
-  const oneYear = 60 * 60 * 24 * 365;
-  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${oneYear}; SameSite=Lax`;
-}
+type Decision = { analytics: boolean; advertising: boolean } | "unset" | null;
 
 export function CookieConsent() {
   const pathname = usePathname();
-  const [consent, setConsent] = useState<"true" | "false" | "unset" | null>(null);
+  const [decision, setDecision] = useState<Decision>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [wantAnalytics, setWantAnalytics] = useState(false);
+  const [wantAdvertising, setWantAdvertising] = useState(false);
 
   useEffect(() => {
-    setConsent(readConsentCookie() ?? "unset");
+    const analytics = readConsent("analytics");
+    const advertising = readConsent("advertising");
+
+    // Anyone who answered the old single question answered it about
+    // analytics. Advertising is a purpose they were never actually asked
+    // about, so it stays off and unanswered rather than being inferred
+    // from a click that meant something narrower.
+    if (analytics === null) {
+      setDecision("unset");
+    } else if (advertising === null) {
+      setWantAnalytics(analytics);
+      setDecision("unset");
+    } else {
+      setDecision({ analytics, advertising });
+    }
 
     function handleReopen() {
-      setConsent("unset");
+      setWantAnalytics(readConsent("analytics") ?? false);
+      setWantAdvertising(readConsent("advertising") ?? false);
+      setShowDetail(true);
+      setDecision("unset");
     }
     window.addEventListener(REOPEN_COOKIE_BANNER_EVENT, handleReopen);
     return () => window.removeEventListener(REOPEN_COOKIE_BANNER_EVENT, handleReopen);
   }, []);
 
-  function handleAccept() {
-    writeConsentCookie("true");
-    setConsent("true");
-  }
-
-  function handleDecline() {
-    writeConsentCookie("false");
-    setConsent("false");
+  function save(analytics: boolean, advertising: boolean) {
+    writeConsent("analytics", analytics);
+    writeConsent("advertising", advertising);
+    setDecision({ analytics, advertising });
+    setShowDetail(false);
   }
 
   const isProtectedPage = PROTECTED_PATHS.some((path) => pathname?.startsWith(path));
-  const showBanner = consent === "unset" && !isProtectedPage;
+  const isNoAdvertisingPage = NO_ADVERTISING_PATHS.some((path) => pathname?.startsWith(path));
+  const showBanner = decision === "unset" && !isProtectedPage;
+
+  const granted = decision !== null && decision !== "unset" ? decision : null;
 
   return (
     <>
-      {consent === "true" && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+      {granted?.analytics && GA_ID && <GoogleAnalytics gaId={GA_ID} />}
 
-      {/* Held back on the logged in pages, unlike GA. An ad network
-          knowing someone is reading a particular support circle is a
-          different thing from counting how people find the site. */}
-      {consent === "true" && !isProtectedPage && <MetaPixel />}
-      {consent === "true" && !isProtectedPage && <XPixel />}
+      {/* Advertising tags stay off inside the logged in app, and off the
+          pages where simply being present says something about the
+          person's health. See NO_ADVERTISING_PATHS. */}
+      {granted?.advertising && !isProtectedPage && !isNoAdvertisingPage && <MetaPixel />}
+      {granted?.advertising && !isProtectedPage && !isNoAdvertisingPage && <XPixel />}
 
       {showBanner && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-bg px-4 py-5 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] sm:px-6">
-          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
-            <p className="text-sm leading-relaxed text-ink">
-              We use cookies to understand how people find and use Between
-              Us. This helps us improve the experience for everyone.
-            </p>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-              <button
-                type="button"
-                onClick={handleAccept}
-                className="w-full rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-text hover:bg-accent-hover sm:w-auto"
-              >
-                Accept
-              </button>
-              <button
-                type="button"
-                onClick={handleDecline}
-                className="w-full rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink hover:bg-surface2 sm:w-auto"
-              >
-                Decline
-              </button>
-            </div>
+          <div className="mx-auto w-full max-w-4xl">
+            {!showDetail ? (
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+                <p className="text-sm leading-relaxed text-ink">
+                  We use cookies to measure how the site is doing, and
+                  optionally to see which ads brought people here. You can
+                  choose each separately, and nothing loads until you do.{" "}
+                  <Link href="/privacy" className="underline underline-offset-4">
+                    Read more
+                  </Link>
+                  .
+                </p>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => save(true, true)}
+                    className="w-full rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-text hover:bg-accent-hover sm:w-auto"
+                  >
+                    Accept all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => save(false, false)}
+                    className="w-full rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink hover:bg-surface2 sm:w-auto"
+                  >
+                    Reject all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDetail(true)}
+                    className="w-full rounded-full px-5 py-2.5 text-sm font-medium text-muted hover:text-ink sm:w-auto"
+                  >
+                    Choose
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked
+                      disabled
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-border"
+                    />
+                    <span className="text-sm leading-relaxed text-muted">
+                      <span className="font-medium text-ink">Essential.</span>{" "}
+                      Keeps you signed in and remembers this choice. Always
+                      on, because the site cannot work without it.
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={wantAnalytics}
+                      onChange={(e) => setWantAnalytics(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-accent focus:ring-accent"
+                    />
+                    <span className="text-sm leading-relaxed text-muted">
+                      <span className="font-medium text-ink">Analytics.</span>{" "}
+                      Google Analytics, so we can count visits and see which
+                      pages help people. Never runs inside your circle.
+                    </span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={wantAdvertising}
+                      onChange={(e) => setWantAdvertising(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-accent focus:ring-accent"
+                    />
+                    <span className="text-sm leading-relaxed text-muted">
+                      <span className="font-medium text-ink">Advertising.</span>{" "}
+                      The Meta Pixel and the X Pixel, so we can tell which
+                      ads bring people to Between Us. These share data with
+                      Meta and X. Never runs inside your circle, and never
+                      on the sign up or log in pages.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => save(wantAnalytics, wantAdvertising)}
+                    className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
+                  >
+                    Save my choices
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => save(false, false)}
+                    className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-ink hover:bg-surface2"
+                  >
+                    Reject all
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

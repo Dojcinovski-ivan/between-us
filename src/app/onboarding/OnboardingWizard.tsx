@@ -26,6 +26,7 @@ export function OnboardingWizard({ invited = false }: { invited?: boolean }) {
   const [gender, setGender] = useState<string | null>(null);
   const [country, setCountry] = useState("");
   const [username, setUsername] = useState(() => suggestAnonymousName());
+  const [sensitiveConsent, setSensitiveConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -109,6 +110,7 @@ export function OnboardingWizard({ invited = false }: { invited?: boolean }) {
         mechanisms,
         journeyStage,
         ageRange,
+        sensitiveConsent,
         gender,
         country,
         username,
@@ -119,16 +121,67 @@ export function OnboardingWizard({ invited = false }: { invited?: boolean }) {
     });
   }
 
-  // Opening screen
+  // Opening screen, and the Article 9 consent gate.
+  //
+  // The questions after this one record that an identifiable person lived
+  // with addiction or abuse, who did it to them, and where they are in
+  // recovery. Under Article 9 that is data concerning health, which may
+  // not be processed at all without one of the narrow exceptions, and the
+  // one this service relies on is explicit consent. Explicit means a
+  // deliberate, separate act, so this is its own unticked box rather than
+  // something folded into the Terms, and the Continue button stays
+  // disabled until it is ticked. Nothing sensitive is written before it.
   if (step === 0) {
     return (
-      <Card className="text-center">
+      <Card>
         <h1 className="text-2xl font-semibold text-ink">You are in the right place.</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           We want to make sure you find the right circle. We will ask you a
           few gentle questions. There are no wrong answers. Take your time.
         </p>
-        <Button onClick={() => setStep(1)} className="mt-6 w-full">
+
+        <div className="mt-6 rounded-2xl border border-border bg-surface2 p-4">
+          <p className="text-sm leading-relaxed text-ink">
+            Some of what we ask next is sensitive. Your answers describe
+            experiences of addiction, abuse or emotional harm, and data
+            protection law treats that as a special category that needs
+            your clear permission before we can hold it at all.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
+            We use these answers for one thing only: matching you to a
+            circle of people with similar experiences. They are never shown
+            to other members, never used for advertising, and never shared
+            with anyone outside Between Us. You can withdraw this at any
+            time from your profile, which erases those answers.
+          </p>
+
+          <label className="mt-4 flex items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={sensitiveConsent}
+              onChange={(e) => setSensitiveConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-accent focus:ring-accent"
+            />
+            <span className="text-sm leading-relaxed text-ink">
+              I explicitly consent to Between Us holding my answers about my
+              experiences in order to match me with a circle.
+            </span>
+          </label>
+
+          <p className="mt-3 text-xs leading-relaxed text-faint">
+            Our{" "}
+            <Link href="/privacy" className="text-accent hover:text-accent-hover">
+              Privacy Policy
+            </Link>{" "}
+            explains how this is stored and how long we keep it.
+          </p>
+        </div>
+
+        <Button
+          onClick={() => setStep(1)}
+          disabled={!sensitiveConsent}
+          className="mt-6 w-full"
+        >
           I am ready
         </Button>
       </Card>

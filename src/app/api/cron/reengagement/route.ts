@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     .from("users")
     .select("id")
     .eq("email_marketing_consent", true)
+    // An erased account keeps its row as an anonymised tombstone, so it
+    // has to be excluded explicitly or the job would keep writing to a
+    // mailbox that no longer belongs to anyone.
+    .is("deleted_at", null)
     .not("circle_id", "is", null)
     .lte("last_active_at", sevenDaysAgo)
     .or(`last_reengagement_email_at.is.null,last_reengagement_email_at.lte.${sevenDaysAgo}`);
