@@ -12,6 +12,7 @@
     "email:dev": "email dev --dir src/emails"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "@next/third-parties": "^16.2.12",
     "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.12.3",

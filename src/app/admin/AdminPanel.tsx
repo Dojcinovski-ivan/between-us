@@ -7,13 +7,22 @@ import { StatsOverview } from "./StatsOverview";
 import { ResourcesManager } from "./ResourcesManager";
 import { AdviceManager } from "./AdviceManager";
 import { BlogManager } from "./BlogManager";
+import { QueueManager } from "./QueueManager";
 import { HealthOverview } from "./HealthOverview";
 import { CirclesManager } from "./CirclesManager";
-import type { PendingReport, Prompt, Stats, Resource, DailyAdvice, BlogPostSummary } from "./types";
+import type {
+  PendingReport,
+  Prompt,
+  Stats,
+  Resource,
+  DailyAdvice,
+  BlogPostSummary,
+  BlogTopic,
+} from "./types";
 import type { CircleHealth, ErrorLogRow } from "@/lib/circleHealth";
 import type { CategoryOption } from "@/lib/categories";
 
-type Tab = "reports" | "health" | "circles" | "prompts" | "advice" | "resources" | "blog" | "stats";
+type Tab = "reports" | "health" | "circles" | "prompts" | "advice" | "resources" | "blog" | "queue" | "stats";
 
 export function AdminPanel({
   initialReports,
@@ -21,6 +30,7 @@ export function AdminPanel({
   initialResources,
   initialAdvice,
   initialBlogPosts,
+  initialBlogTopics,
   stats,
   health,
   errors,
@@ -31,6 +41,7 @@ export function AdminPanel({
   initialResources: Resource[];
   initialAdvice: DailyAdvice[];
   initialBlogPosts: BlogPostSummary[];
+  initialBlogTopics: BlogTopic[];
   stats: Stats;
   health: CircleHealth;
   errors: ErrorLogRow[];
@@ -38,6 +49,7 @@ export function AdminPanel({
 }) {
   const [tab, setTab] = useState<Tab>("reports");
   const [pendingCount, setPendingCount] = useState(initialReports.length);
+  const pendingTopics = initialBlogTopics.filter((t) => t.status === "pending").length;
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "reports", label: `Reports${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
@@ -47,6 +59,7 @@ export function AdminPanel({
     { id: "advice", label: "Daily Advice" },
     { id: "resources", label: "Resources" },
     { id: "blog", label: "Blog" },
+    { id: "queue", label: `Queue${pendingTopics > 0 ? ` (${pendingTopics})` : ""}` },
     { id: "stats", label: "Overview" },
   ];
 
@@ -84,6 +97,7 @@ export function AdminPanel({
         <ResourcesManager initialResources={initialResources} categoryOptions={categoryOptions} />
       )}
       {tab === "blog" && <BlogManager initialPosts={initialBlogPosts} />}
+      {tab === "queue" && <QueueManager initialTopics={initialBlogTopics} />}
       {tab === "stats" && <StatsOverview stats={stats} />}
     </div>
   );

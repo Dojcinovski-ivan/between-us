@@ -62,4 +62,24 @@ export type BlogPostFull = {
   published_at: string | null;
 };
 
+export type BlogTopicStatus =
+  | "pending"
+  | "generating"
+  | "drafted"
+  | "published"
+  | "failed"
+  | "skipped";
+
+export type BlogTopic = {
+  id: string;
+  topic: string;
+  target_keyword: string;
+  category: string;
+  status: BlogTopicStatus;
+  blog_post_id: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  generated_at: string | null;
+};
+
 export const BLOG_CATEGORIES = ["Understanding Trauma", "Relationships", "Healing", "Resources"] as const;

@@ -1,11 +1,10 @@
 name: Between Us blog
 
+# Retired. The blog now runs from /api/cron/generate-blog on a Vercel cron
+# (see vercel.json), reading blog_topic_queue rather than blog_keywords.
+# The schedule is removed so the two pipelines can never both publish.
+# Kept dispatchable so the old script is still runnable by hand if needed.
 on:
-  schedule:
-    # Three times a day, UTC. GitHub can fire a few minutes late, which is fine.
-    - cron: '0 6 * * *'
-    - cron: '0 12 * * *'
-    - cron: '0 18 * * *'
   workflow_dispatch:
     inputs:
       posts:
