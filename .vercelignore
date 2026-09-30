@@ -1,0 +1,6 @@
+# Nothing here is part of the website. Keeping them out of the deployment
+# means the Vercel build cannot be affected by them at all.
+ios-app
+blog-pipeline
+fly-with-pet
+ios

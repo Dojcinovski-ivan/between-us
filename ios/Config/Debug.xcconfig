@@ -1,0 +1,9 @@
+// Debug builds talk to the website running locally (`npm run dev` in the
+// repo root), so new /api/mobile routes can be tried before they deploy.
+// The simulator shares the Mac's network, so localhost reaches it.
+// `/$()/` stops xcconfig reading the `//` in a URL as a comment.
+API_BASE_URL = http:/$()/localhost:3000
+
+// Supabase keys live in Secrets.xcconfig, which git ignores. Included last
+// so it can also override API_BASE_URL.
+#include? "Secrets.xcconfig"

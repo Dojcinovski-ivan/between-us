@@ -1,0 +1,15 @@
+{
+  "name": "between-us-ios",
+  "version": "0.1.0",
+  "private": true,
+  "description": "iOS shell around betweenussupport.com. Deliberately a separate npm project from the Next.js app so the website's dependencies, lockfile and Vercel build are never touched by anything in here.",
+  "scripts": {
+    "sync": "cap sync ios",
+    "open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  }
+}

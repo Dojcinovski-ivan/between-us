@@ -1,0 +1,15 @@
+{
+  "appId": "com.betweenussupport.wrapper",
+  "appName": "Between Us",
+  "webDir": "public",
+  "server": {
+    "url": "https://betweenussupport.com",
+    "hostname": "betweenussupport.com",
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

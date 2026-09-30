@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 import { registerAccount } from "./actions";
 import { isOldEnough, MINIMUM_AGE } from "@/lib/age";
+import type { SignupResult } from "@/lib/email";
 
 export function RegisterForm({ invited = false }: { invited?: boolean }) {
   const [email, setEmail] = useState("");
@@ -56,7 +57,7 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
 
     // Created server side so the confirmation email comes from Between Us
     // rather than Supabase — see sendSignupConfirmationEmail.
-    let status: "sent" | "exists" | "failed" | "underage" = "failed";
+    let status: SignupResult = "failed";
     try {
       ({ status } = await registerAccount({
         email,
@@ -78,6 +79,10 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
     }
     if (status === "exists") {
       setError("There's already an account with that email. Try logging in instead.");
+      return;
+    }
+    if (status === "rate_limited") {
+      setError("Too many attempts from here. Please wait a while and try again.");
       return;
     }
     if (status === "failed") {

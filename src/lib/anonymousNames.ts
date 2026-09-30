@@ -1,9 +1,9 @@
-const ADJECTIVES = [
+export const ADJECTIVES = [
   "quiet", "gentle", "still", "soft", "calm", "steady", "warm", "brave",
   "kind", "open", "slow", "safe", "tender", "patient", "hopeful", "grounded",
 ];
 
-const NOUNS = [
+export const NOUNS = [
   "oak", "water", "wave", "river", "meadow", "harbor", "dawn", "moss",
   "willow", "ember", "horizon", "shore", "forest", "brook", "stone",
   "light", "hill", "sky", "tide", "place",

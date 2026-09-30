@@ -103,10 +103,10 @@ export async function sendPasswordResetEmail(email: string) {
   }
 }
 
-// "underage" is returned by the register action before any account is
-// created, so it never reaches the mail path below — it lives on this type
-// so the form has one result shape to switch on.
-export type SignupResult = "sent" | "exists" | "failed" | "underage";
+// "underage" and "rate_limited" are returned by registerAccountFor before
+// any account is created, so they never reach the mail path below — they
+// live on this type so the forms have one result shape to switch on.
+export type SignupResult = "sent" | "exists" | "failed" | "underage" | "rate_limited";
 
 /**
  * Creates the account and sends our own confirmation email.
