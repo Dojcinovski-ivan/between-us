@@ -9,6 +9,12 @@
 -- block work everywhere at once (the app, the website and realtime, which
 -- applies the same policy per subscriber) instead of trusting each client
 -- to filter. Everything else about that policy is unchanged.
+--
+-- Wrapped in one transaction: the policy is dropped and recreated below,
+-- and if anything failed in between, members would briefly see only their
+-- own posts. All or nothing instead.
+
+begin;
 
 create table public.user_blocks (
   id uuid primary key default gen_random_uuid(),
@@ -54,3 +60,5 @@ create policy "circle members see their circle's posts"
     or user_id = auth.uid()
     or public.is_admin()
   );
+
+commit;

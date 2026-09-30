@@ -20,9 +20,10 @@ export type RegistrationInput = {
  * Everything is re-checked here rather than trusted from the form, since
  * both callers are plain requests anyone can shape.
  *
- * Limits: 5 attempts per IP per hour, so one caller can't mass-create
- * accounts or mail-bomb a list of addresses, and 3 per address per hour,
- * so one inbox can't be flooded with confirmation emails.
+ * Limits: 20 attempts per IP per hour, so one caller can't mass-create
+ * accounts or mail-bomb a list of addresses while people sharing a network
+ * (a clinic, a group session) can still sign up together, and 3 per
+ * address per hour, so one inbox can't be flooded with confirmation emails.
  */
 export async function registerAccountFor(
   input: RegistrationInput,
@@ -33,7 +34,7 @@ export async function registerAccountFor(
 
   if (!email.includes("@") || password.length < 8) return "failed";
 
-  if (!(await checkRateLimit("register-ip", ip, 5, 60 * 60))) return "rate_limited";
+  if (!(await checkRateLimit("register-ip", ip, 20, 60 * 60))) return "rate_limited";
 
   // A check that only runs in the browser or app is not a gate, it is a
   // suggestion. The date is used here and then dropped: only the fact that

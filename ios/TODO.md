@@ -23,7 +23,7 @@
 
 - [ ] Google sign-in. If added, **Sign in with Apple must be added too** (App Store rule 4.8).
 - [ ] Invite links in the app (web only for now).
-- [ ] Block and unblock on the website too. Blocks already hide posts there
-      (row-level security), but there's no web screen to manage them.
+- [ ] Blocking from the website's post menu. Blocks made in the app already
+      hide posts on the website, and can be undone on the web profile page.
 - [ ] App errors in the admin health view: /api/log-error only accepts the
       website's cookie login, not the app's token.

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { categoryLabel } from "@/lib/categories";
 import { stageLabel } from "@/lib/stages";
 import { Card } from "@/components/ui/Card";
@@ -8,6 +9,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { BioEditor } from "./BioEditor";
 import { EmailPreferences } from "./EmailPreferences";
 import { DataAndAccount } from "./DataAndAccount";
+import { BlockedMembers, type BlockedMember } from "./BlockedMembers";
 
 export const metadata = {
   title: "Your Profile — Between Us",
@@ -19,6 +21,20 @@ export default async function ProfilePage() {
 
   if (!user) redirect("/login");
   if (!profile || !profile.circle_id) redirect("/onboarding");
+
+  // Null when the user_blocks table isn't there yet (migration 0030), in
+  // which case the section is simply left out rather than showing an error.
+  const { data: blockRows, error: blocksError } = await createClient()
+    .from("user_blocks")
+    .select("blocked_id, blocked:users!user_blocks_blocked_id_fkey(username)")
+    .eq("blocker_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const blockedMembers: BlockedMember[] | null = blocksError
+    ? null
+    : ((blockRows ?? []) as unknown as { blocked_id: string; blocked: { username: string } | null }[]).map(
+        (row) => ({ blockedId: row.blocked_id, username: row.blocked?.username ?? "former member" }),
+      );
 
   const memberSince = new Date(profile.created_at).toLocaleDateString(undefined, {
     month: "long",
@@ -59,6 +75,12 @@ export default async function ProfilePage() {
             initialConsent={profile.email_marketing_consent ?? false}
           />
         </div>
+
+        {blockedMembers && (
+          <div className="mt-5 border-t border-border pt-5">
+            <BlockedMembers userId={user.id} initialMembers={blockedMembers} />
+          </div>
+        )}
 
         <div className="mt-5 border-t border-border pt-5">
           <DataAndAccount />
