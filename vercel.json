@@ -2,6 +2,6 @@
   "crons": [
     { "path": "/api/cron/weekly-digest", "schedule": "0 8 * * 1" },
     { "path": "/api/cron/reengagement", "schedule": "0 9 * * *" },
-    { "path": "/api/cron/generate-blog", "schedule": "0 7,15 * * *" }
+    { "path": "/api/cron/generate-blog", "schedule": "0 7 * * *" }
   ]
 }

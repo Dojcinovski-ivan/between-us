@@ -23,7 +23,7 @@ Then in Xcode pick an iPhone simulator in the toolbar and press ⌘R.
 No Apple Developer account is needed for the simulator. Push notifications
 wait until there is one.
 
-Release builds point at `https://betweenussupport.com` instead; set
+Release builds point at `https://www.betweenussupport.com` instead; set
 `API_BASE_URL` in `Secrets.xcconfig` to override either.
 
 ## UI tests

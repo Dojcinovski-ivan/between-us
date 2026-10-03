@@ -1,4 +1,5 @@
-API_BASE_URL = https:/$()/betweenussupport.com
+// www, because the bare domain answers every request with a redirect to it.
+API_BASE_URL = https:/$()/www.betweenussupport.com
 
 // Supabase keys live in Secrets.xcconfig, which git ignores.
 #include? "Secrets.xcconfig"

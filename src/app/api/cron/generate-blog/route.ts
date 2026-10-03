@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runBlogGeneration } from "@/lib/blogPipeline";
 
-// Writes and publishes two posts, twice a day. Same CRON_SECRET guard as
+// Writes and publishes two posts, once a day (the Hobby plan refuses any cron that runs more often). Same CRON_SECRET guard as
 // the other two cron routes: Vercel sends it as a bearer token on every
 // scheduled invocation, and nothing else can reach this.
 
