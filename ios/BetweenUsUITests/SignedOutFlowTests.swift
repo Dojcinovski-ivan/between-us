@@ -9,6 +9,8 @@ final class SignedOutFlowTests: XCTestCase {
         continueAfterFailure = false
         app = await XCUIApplication()
         await app.launch()
+        // The signed-in tests leave their account logged in.
+        await app.signOutIfSignedIn()
     }
 
     @MainActor
