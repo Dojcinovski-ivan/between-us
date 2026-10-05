@@ -11,6 +11,8 @@ final class SessionStore {
         case loading
         case signedOut
         case needsOnboarding
+        /// Has a profile but no circle, like the team's admin account.
+        case noCircle
         case signedIn(Profile)
         case failed
     }
@@ -20,6 +22,10 @@ final class SessionStore {
     /// Same once-a-day throttle as the website, which drives the
     /// re-engagement email.
     private static let activityThrottle: TimeInterval = 24 * 60 * 60
+
+    /// How long finding out who is signed in may take before the launch
+    /// spinner gives way to the "Can't connect" screen.
+    private static let loadTimeout: TimeInterval = 20
 
     /// Follows Supabase auth events for the life of the app.
     func start() async {
@@ -48,6 +54,14 @@ final class SessionStore {
     }
 
     private func load(session: Session?) async {
+        do {
+            try await withTimeout(Self.loadTimeout) { try await self.resolve(session) }
+        } catch {
+            state = .failed
+        }
+    }
+
+    private func resolve(_ session: Session?) async throws {
         guard var session else {
             state = .signedOut
             return
@@ -56,39 +70,46 @@ final class SessionStore {
         // The stored session may be days old. Refresh it before using it; if
         // that fails the refresh token is gone and they need to log in again.
         if session.isExpired {
-            guard let refreshed = try? await supabase.auth.refreshSession() else {
+            do {
+                session = try await supabase.auth.refreshSession()
+            } catch {
+                // Out of time is a connection problem, not a dead token.
+                try Task.checkCancellation()
                 state = .signedOut
                 return
             }
-            session = refreshed
         }
 
-        do {
-            let rows: [Profile] = try await supabase
-                .from("users")
-                .select(Profile.columns)
-                .eq("id", value: session.user.id)
-                .limit(1)
-                .execute()
-                .value
+        let rows: [Profile] = try await supabase
+            .from("users")
+            .select(Profile.columns)
+            .eq("id", value: session.user.id)
+            .limit(1)
+            .execute()
+            .value
 
-            guard let profile = rows.first else {
-                state = .needsOnboarding
-                return
-            }
-
-            // An erased account is anonymised, not deleted, and its login is
-            // banned. If a stale session still gets here, end it.
-            if profile.deletedAt != nil {
-                await signOut()
-                return
-            }
-
-            state = .signedIn(profile)
-            await markActive(profile)
-        } catch {
-            state = .failed
+        guard let profile = rows.first else {
+            state = .needsOnboarding
+            return
         }
+
+        // An erased account is anonymised, not deleted, and its login is
+        // banned. If a stale session still gets here, end it.
+        if profile.deletedAt != nil {
+            await signOut()
+            return
+        }
+
+        // Without a circle there is no feed to load, and the circle screen
+        // would wait for one forever.
+        guard profile.circleId != nil else {
+            state = .noCircle
+            return
+        }
+
+        state = .signedIn(profile)
+        // Not part of signing in, so it doesn't count against the timeout.
+        Task { await markActive(profile) }
     }
 
     private func markActive(_ profile: Profile) async {

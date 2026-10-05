@@ -87,9 +87,25 @@ final class CircleStore {
         enum CodingKeys: String, CodingKey { case blockedId = "blocked_id" }
     }
 
+    /// A first load slower than this shows "Can't load your circle" with a
+    /// Try Again button instead of a spinner that never ends.
+    private static let loadTimeout: TimeInterval = 20
+
     func load() async {
-        guard let circleId = profile.circleId else { return }
         if circle == nil { loading = .loading }
+        do {
+            try await withTimeout(Self.loadTimeout) { try await self.fetch() }
+        } catch {
+            // A failed refresh leaves what is already on screen alone.
+            if circle == nil { loading = .failed }
+        }
+    }
+
+    private struct NoCircle: Error {}
+
+    private func fetch() async throws {
+        // SessionStore keeps a profile without a circle away from here.
+        guard let circleId = profile.circleId else { throw NoCircle() }
 
         do {
             let circle: Circle = try await supabase.from("circles")
@@ -182,8 +198,6 @@ final class CircleStore {
             myReads = Set(reads.filter { $0.userId == me }.map(\.postId))
 
             loading = .loaded
-        } catch {
-            if circle == nil { loading = .failed }
         }
     }
 

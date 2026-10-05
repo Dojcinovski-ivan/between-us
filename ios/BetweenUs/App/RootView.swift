@@ -17,6 +17,8 @@ struct RootView: View {
                 WelcomeView()
             case .needsOnboarding:
                 OnboardingView()
+            case .noCircle:
+                NoCircleView()
             case .signedIn(let profile):
                 CircleView(profile: profile)
                     .id(profile.id)
@@ -41,6 +43,27 @@ private struct ConnectionErrorView: View {
                 Task { await session.reload() }
             }
             .buttonStyle(.borderedProminent)
+        }
+        .background(Theme.background)
+    }
+}
+
+private struct NoCircleView: View {
+    @Environment(SessionStore.self) private var session
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("No circle yet", systemImage: "person.2.slash")
+        } description: {
+            Text("This account isn't in a circle, so there is nothing to show here. If you manage Between Us, use the website instead.")
+        } actions: {
+            Button("Try Again") {
+                Task { await session.reload() }
+            }
+            .buttonStyle(.borderedProminent)
+            Button("Log Out") {
+                Task { await session.signOut() }
+            }
         }
         .background(Theme.background)
     }

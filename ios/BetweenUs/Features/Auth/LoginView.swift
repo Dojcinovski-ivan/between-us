@@ -15,6 +15,10 @@ struct LoginView: View {
     @State private var failedAttempts = 0
     @FocusState private var focus: Field?
 
+    /// Long enough for a slow connection, short enough that nobody is left
+    /// watching a spinner.
+    private static let timeout: TimeInterval = 20
+
     private var canSubmit: Bool {
         email.contains("@") && !password.isEmpty && !isSubmitting
     }
@@ -85,14 +89,20 @@ struct LoginView: View {
         errorMessage = nil
         isSubmitting = true
 
+        let email = email.trimmingCharacters(in: .whitespaces).lowercased()
+        let password = password
+
         Task {
             defer { isSubmitting = false }
             do {
-                try await supabase.auth.signIn(
-                    email: email.trimmingCharacters(in: .whitespaces).lowercased(),
-                    password: password
-                )
+                _ = try await withTimeout(Self.timeout) {
+                    try await supabase.auth.signIn(email: email, password: password)
+                }
                 // SessionStore hears .signedIn and swaps the whole screen.
+            } catch is TimedOut {
+                fail("Logging in is taking too long. Check your connection and try again.")
+            } catch let error as URLError where error.code == .timedOut {
+                fail("Logging in is taking too long. Check your connection and try again.")
             } catch let error as AuthError where error.errorCode == .emailNotConfirmed {
                 fail("Please confirm your email first. The link is in your inbox.")
             } catch let error as URLError where error.code == .notConnectedToInternet {
