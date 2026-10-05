@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getCurrentUserAndProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ageConfirmedAt } from "@/lib/age";
 import { OnboardingWizard } from "./OnboardingWizard";
+import { AgeGate } from "./AgeGate";
 
 export const metadata = {
   title: "Get Started — Between Us",
@@ -41,7 +43,9 @@ export default async function OnboardingPage() {
   return (
     <main className="flex min-h-[calc(100vh-3rem)] items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
-        <OnboardingWizard invited={invited} />
+        {/* Signing in with Google skips the register form, and with it the
+            date of birth check, so it is asked here before anything else. */}
+        {!profile && !ageConfirmedAt(user.user_metadata) ? <AgeGate /> : <OnboardingWizard invited={invited} />}
       </div>
     </main>
   );

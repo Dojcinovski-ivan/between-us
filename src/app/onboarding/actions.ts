@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendWelcomeEmail, sendCircleFormedEmail, sendNewMemberEmail } from "@/lib/email";
-import { completeOnboardingFor, USERNAME_PATTERN, type OnboardingInput } from "@/lib/onboarding";
+import { ageConfirmedAt } from "@/lib/age";
+import { completeOnboardingFor, AGE_NOT_CONFIRMED, USERNAME_PATTERN, type OnboardingInput } from "@/lib/onboarding";
 
 // The logic lives in onboarding.ts, shared with the iOS app's
 // /api/mobile/onboarding route.
@@ -50,6 +51,12 @@ export async function completeInviteOnboarding(rawUsername: string) {
     return { error: "Your session expired. Please log in again." };
   }
 
+  // Same gate as completeOnboardingFor: an invite is not a way round it.
+  const confirmedAt = ageConfirmedAt(user.user_metadata);
+  if (!confirmedAt) {
+    return { error: AGE_NOT_CONFIRMED };
+  }
+
   const username = rawUsername.trim();
   if (!USERNAME_PATTERN.test(username)) {
     return { error: "Usernames are 3-20 characters: letters, numbers, and underscores only." };
@@ -82,10 +89,7 @@ export async function completeInviteOnboarding(rawUsername: string) {
     age_range: "25_34",
     gender: "prefer_not_to_say",
     country: "other",
-    age_confirmed_at:
-      typeof user.user_metadata?.age_confirmed_at === "string"
-        ? user.user_metadata.age_confirmed_at
-        : null,
+    age_confirmed_at: confirmedAt,
   });
 
   if (insertError) {

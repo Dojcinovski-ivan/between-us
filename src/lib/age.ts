@@ -44,3 +44,14 @@ export function isOldEnough(day: number, month: number, year: number): boolean {
   const age = ageFromParts(day, month, year);
   return age !== null && age >= MINIMUM_AGE;
 }
+
+export const UNDERAGE_MESSAGE = `Between Us is for adults, so you need to be ${MINIMUM_AGE} or over to join. If you are going through something and need support right now, findahelpline.com lists free confidential helplines in your country, including ones for young people.`;
+
+/**
+ * When this account passed the check, read off its auth metadata, or null
+ * if it never did. Email sign-up writes it at registration; an account made
+ * through Google has none until the date of birth step in onboarding.
+ */
+export function ageConfirmedAt(metadata: Record<string, unknown> | undefined): string | null {
+  return typeof metadata?.age_confirmed_at === "string" ? metadata.age_confirmed_at : null;
+}

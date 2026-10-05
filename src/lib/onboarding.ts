@@ -6,12 +6,14 @@ import { WHO_WAS_IT } from "@/lib/whoWasIt";
 import { MECHANISMS } from "@/lib/mechanisms";
 import { JOURNEY_STAGES } from "@/lib/journeyStages";
 import { AGE_RANGES } from "@/lib/ageRanges";
+import { ageConfirmedAt } from "@/lib/age";
 import { GENDERS } from "@/lib/genders";
 import { COUNTRIES } from "@/lib/countries";
 import { derivePodCategory } from "@/lib/matchPod";
 import { matchCircle, releaseCircleSeat } from "@/lib/matchCircle";
 import { sendWelcomeEmail, sendCircleFormedEmail, sendNewMemberEmail } from "@/lib/email";
 
+export const AGE_NOT_CONFIRMED = "We need to check your age before you can join a circle. Please log in on the website to finish signing up.";
 export const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
 export type OnboardingInput = {
@@ -89,6 +91,16 @@ export async function completeOnboardingFor(user: User, input: OnboardingInput):
     return { ok: false, error: "You have already joined a circle.", alreadyOnboarded: true };
   }
 
+  // Written to the account when the date of birth check passed, at
+  // registration or on onboarding's own date of birth step. The pages send
+  // nobody here without it, but this is the gate: no profile, and so no
+  // circle, for an account that never passed. The date itself was never
+  // stored.
+  const confirmedAt = ageConfirmedAt(user.user_metadata);
+  if (!confirmedAt) {
+    return { ok: false, error: AGE_NOT_CONFIRMED };
+  }
+
   const category = derivePodCategory({
     feltExperience: feltExperience.slug,
     whoWasIt: whoWasIt.slug,
@@ -122,12 +134,6 @@ export async function completeOnboardingFor(user: User, input: OnboardingInput):
   // row itself is not created until now, at the end of onboarding.
   const emailMarketingConsent = user.user_metadata?.email_marketing_consent === true;
 
-  // Written at registration by sendSignupConfirmationEmail, after the date
-  // of birth check passed. The date of birth itself was never stored.
-  const ageConfirmedAt =
-    typeof user.user_metadata?.age_confirmed_at === "string"
-      ? user.user_metadata.age_confirmed_at
-      : null;
   const now = new Date().toISOString();
 
   const { error: insertError } = await admin.from("users").insert({
@@ -146,7 +152,7 @@ export async function completeOnboardingFor(user: User, input: OnboardingInput):
     email_marketing_consent_date: emailMarketingConsent ? now : null,
     // Article 7(1): the record that makes the consent demonstrable.
     special_category_consent_at: now,
-    age_confirmed_at: ageConfirmedAt,
+    age_confirmed_at: confirmedAt,
   });
 
   if (insertError) {

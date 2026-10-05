@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { GoogleButton } from "@/components/GoogleButton";
 import { registerAccount } from "./actions";
-import { isOldEnough, MINIMUM_AGE } from "@/lib/age";
+import { DateOfBirthFields } from "@/components/DateOfBirthFields";
+import { isOldEnough, UNDERAGE_MESSAGE } from "@/lib/age";
 import type { SignupResult } from "@/lib/email";
 
 export function RegisterForm({ invited = false }: { invited?: boolean }) {
@@ -38,9 +39,7 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
       return;
     }
     if (!isOldEnough(day, month, year)) {
-      setError(
-        `Between Us is for adults, so you need to be ${MINIMUM_AGE} or over to join. If you are going through something and need support right now, findahelpline.com lists free confidential helplines in your country, including ones for young people.`,
-      );
+      setError(UNDERAGE_MESSAGE);
       return;
     }
 
@@ -72,9 +71,7 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
     setIsSubmitting(false);
 
     if (status === "underage") {
-      setError(
-        `Between Us is for adults, so you need to be ${MINIMUM_AGE} or over to join. If you are going through something and need support right now, findahelpline.com lists free confidential helplines in your country, including ones for young people.`,
-      );
+      setError(UNDERAGE_MESSAGE);
       return;
     }
     if (status === "exists") {
@@ -185,48 +182,14 @@ export function RegisterForm({ invited = false }: { invited?: boolean }) {
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
 
-        <fieldset>
-          <legend className="text-sm font-medium text-ink">Date of birth</legend>
-          <p className="mt-1 text-xs text-faint">
-            Between Us is for adults. We check your age and then discard the
-            date, so your birthday is never stored.
-          </p>
-          <div className="mt-2 flex gap-2">
-            <input
-              aria-label="Day"
-              placeholder="DD"
-              inputMode="numeric"
-              autoComplete="bday-day"
-              maxLength={2}
-              required
-              value={dobDay}
-              onChange={(e) => setDobDay(e.target.value.replace(/\D/g, ""))}
-              className="w-16 rounded-xl border border-border bg-surface2 px-3 py-3 text-center text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-            <input
-              aria-label="Month"
-              placeholder="MM"
-              inputMode="numeric"
-              autoComplete="bday-month"
-              maxLength={2}
-              required
-              value={dobMonth}
-              onChange={(e) => setDobMonth(e.target.value.replace(/\D/g, ""))}
-              className="w-16 rounded-xl border border-border bg-surface2 px-3 py-3 text-center text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-            <input
-              aria-label="Year"
-              placeholder="YYYY"
-              inputMode="numeric"
-              autoComplete="bday-year"
-              maxLength={4}
-              required
-              value={dobYear}
-              onChange={(e) => setDobYear(e.target.value.replace(/\D/g, ""))}
-              className="w-24 rounded-xl border border-border bg-surface2 px-3 py-3 text-center text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-        </fieldset>
+        <DateOfBirthFields
+          day={dobDay}
+          month={dobMonth}
+          year={dobYear}
+          onDay={setDobDay}
+          onMonth={setDobMonth}
+          onYear={setDobYear}
+        />
 
         <label className="flex items-start gap-2.5">
           <input
