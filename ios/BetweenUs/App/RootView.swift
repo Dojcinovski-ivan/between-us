@@ -3,8 +3,27 @@ import SwiftUI
 /// Switches between the signed-out flow and the signed-in app.
 struct RootView: View {
     @Environment(SessionStore.self) private var session
+    @State private var showSplash = true
 
     var body: some View {
+        ZStack {
+            screen
+                // Nothing underneath can be reached until the splash is gone.
+                .accessibilityHidden(showSplash)
+
+            if showSplash {
+                SplashView()
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .task {
+            try? await Task.sleep(for: SplashView.duration)
+            withAnimation(.easeInOut(duration: 0.5)) { showSplash = false }
+        }
+    }
+
+    private var screen: some View {
         Group {
             switch session.state {
             case .loading:
