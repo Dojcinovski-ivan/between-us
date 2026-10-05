@@ -107,7 +107,11 @@ private extension SignedInFlowTests {
     /// Gets to the feed from wherever the app launched, logging in if needed.
     func openFeed() {
         XCTAssertTrue(app.waitForFirstScreen(), "Neither the welcome screen nor the circle appeared")
-        if !app.profileButton.exists { logIn() }
+        if !app.profileButton.exists {
+            // Another account without a circle may have been left signed in.
+            app.signOutIfSignedIn()
+            logIn()
+        }
         waitForFeed()
     }
 
