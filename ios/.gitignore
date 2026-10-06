@@ -4,3 +4,4 @@ DerivedData/
 *.xcuserstate
 .build/
 .test-credentials
+screenshots/

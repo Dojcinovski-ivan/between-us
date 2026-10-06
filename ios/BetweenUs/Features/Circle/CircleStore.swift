@@ -92,6 +92,9 @@ final class CircleStore {
     private static let loadTimeout: TimeInterval = 20
 
     func load() async {
+        #if DEBUG
+        if Demo.isOn { return showDemo() }
+        #endif
         if circle == nil { loading = .loading }
         do {
             try await withTimeout(Self.loadTimeout) { try await self.fetch() }
@@ -100,6 +103,18 @@ final class CircleStore {
             if circle == nil { loading = .failed }
         }
     }
+
+    #if DEBUG
+    private func showDemo() {
+        circle = Demo.circle
+        members = Dictionary(uniqueKeysWithValues: Demo.members.map { ($0.id, $0) })
+        posts = Demo.posts
+        prompt = Demo.prompt
+        reactionCounts = Demo.reactionCounts
+        myReactions = Demo.myReactions
+        loading = .loaded
+    }
+    #endif
 
     private struct NoCircle: Error {}
 
@@ -216,6 +231,9 @@ final class CircleStore {
     /// Follows inserts, edits and deletes in this circle until the calling
     /// task is cancelled (the view disappearing does that).
     func listen() async {
+        #if DEBUG
+        if Demo.isOn { return }
+        #endif
         guard let circleId = profile.circleId else { return }
         let channel = supabase.channel("circle-\(circleId.uuidString.lowercased())")
         let filter = RealtimePostgresFilter.eq("circle_id", value: circleId.uuidString.lowercased())

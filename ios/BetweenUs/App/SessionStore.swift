@@ -32,6 +32,12 @@ final class SessionStore {
 
     /// Follows Supabase auth events for the life of the app.
     func start() async {
+        #if DEBUG
+        if Demo.isOn {
+            state = .signedIn(Demo.profile)
+            return
+        }
+        #endif
         for await (event, session) in supabase.auth.authStateChanges {
             switch event {
             case .initialSession, .signedIn, .userUpdated:
