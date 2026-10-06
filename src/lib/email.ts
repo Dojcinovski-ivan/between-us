@@ -18,10 +18,14 @@ import { signUnsubscribeToken } from "@/lib/unsubscribeToken";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Between Us <hello@betweenussupport.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://betweenussupport.com";
-const CIRCLE_URL = `${SITE_URL}/circle`;
+// Links the iOS app can open have to be on www. The bare domain redirects
+// there, and iOS only hands a link to the app when it is tapped directly,
+// never after a redirect. See .well-known/apple-app-site-association.
+const APP_LINK_URL = SITE_URL.replace("//betweenussupport.com", "//www.betweenussupport.com");
+const CIRCLE_URL = `${APP_LINK_URL}/circle`;
 const ADMIN_URL = `${SITE_URL}/admin`;
 const RESET_URL = `${SITE_URL}/reset-password`;
-const CONFIRM_URL = `${SITE_URL}/auth/confirm`;
+const CONFIRM_URL = `${APP_LINK_URL}/auth/confirm`;
 
 function unsubscribeUrl(userId: string) {
   const token = signUnsubscribeToken(userId);

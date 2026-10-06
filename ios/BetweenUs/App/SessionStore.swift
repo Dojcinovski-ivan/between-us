@@ -19,6 +19,9 @@ final class SessionStore {
 
     private(set) var state: State = .loading
 
+    /// Set when an emailed link could not be used, for RootView to show.
+    var linkFailed = false
+
     /// Same once-a-day throttle as the website, which drives the
     /// re-engagement email.
     private static let activityThrottle: TimeInterval = 24 * 60 * 60
@@ -46,6 +49,25 @@ final class SessionStore {
     func reload() async {
         state = .loading
         await load(session: try? await supabase.auth.session)
+    }
+
+    /// Handles a link from one of our emails that iOS handed to the app
+    /// (see the website's apple-app-site-association). Only the sign-up
+    /// confirmation needs any work: it is verified here, which signs the
+    /// new member in and takes them to onboarding. A link to the circle
+    /// just opens the app.
+    func open(_ url: URL) async {
+        guard url.path == "/auth/confirm",
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let tokenHash = items.first(where: { $0.name == "token_hash" })?.value,
+              items.first(where: { $0.name == "type" })?.value == "signup" else { return }
+
+        do {
+            // Signing in is reported through authStateChanges, like a login.
+            try await supabase.auth.verifyOTP(tokenHash: tokenHash, type: .signup)
+        } catch {
+            linkFailed = true
+        }
     }
 
     func signOut() async {

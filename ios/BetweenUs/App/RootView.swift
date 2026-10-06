@@ -6,6 +6,8 @@ struct RootView: View {
     @State private var showSplash = true
 
     var body: some View {
+        @Bindable var session = session
+
         ZStack {
             screen
                 // Nothing underneath can be reached until the splash is gone.
@@ -20,6 +22,11 @@ struct RootView: View {
         .task {
             try? await Task.sleep(for: SplashView.duration)
             withAnimation(.easeInOut(duration: 0.5)) { showSplash = false }
+        }
+        .alert("That link didn't work", isPresented: $session.linkFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Confirmation links expire and only work once. If you have already confirmed your email, just log in.")
         }
     }
 
