@@ -6,6 +6,7 @@ import { timeAgo } from "@/lib/time";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { PendingReport } from "./types";
+import { banMember } from "./moderationActions";
 
 export function ReportsQueue({
   initialReports,
@@ -17,6 +18,8 @@ export function ReportsQueue({
   const supabase = createClient();
   const [reports, setReports] = useState(initialReports);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [confirmBan, setConfirmBan] = useState<string | null>(null);
+  const [banError, setBanError] = useState<string | null>(null);
 
   useEffect(() => {
     onCountChange?.(reports.length);
@@ -35,6 +38,25 @@ export function ReportsQueue({
     if (!postError) {
       await supabase.from("reports").update({ status: "resolved_removed" }).eq("id", report.id);
       setReports((prev) => prev.filter((r) => r.id !== report.id));
+    }
+    setPendingAction(null);
+  }
+
+  // Removes the post and everything else the author wrote, closes every
+  // report on them and signs them out for good. See moderationActions.
+  async function handleBan(report: PendingReport) {
+    const authorId = report.post?.user_id;
+    if (!authorId) return;
+    setPendingAction(report.id);
+    setBanError(null);
+
+    const result = await banMember(authorId);
+    if ("error" in result) {
+      setBanError(result.error);
+    } else {
+      await supabase.from("reports").update({ status: "resolved_removed" }).eq("id", report.id);
+      setReports((prev) => prev.filter((r) => r.post?.user_id !== authorId));
+      setConfirmBan(null);
     }
     setPendingAction(null);
   }
@@ -96,7 +118,27 @@ export function ReportsQueue({
             >
               Remove Post
             </Button>
+            {confirmBan === report.id ? (
+              <Button
+                variant="danger"
+                onClick={() => handleBan(report)}
+                disabled={pendingAction === report.id}
+              >
+                Ban {report.post?.users?.username ?? "member"} and remove all their posts?
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmBan(report.id)}
+                disabled={pendingAction === report.id || !report.post}
+              >
+                Ban Member
+              </Button>
+            )}
           </div>
+          {banError && confirmBan === report.id && (
+            <p className="mt-2 text-sm text-warn">{banError}</p>
+          )}
         </Card>
       ))}
     </div>

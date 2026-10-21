@@ -406,6 +406,20 @@ final class CircleStore {
         return post
     }
 
+    /// What to tell the member when a post or edit fails. The database
+    /// refuses blocked words and banned members by name (0031_moderation);
+    /// anything else is most likely the connection.
+    static func postFailureMessage(for error: Error) -> String {
+        switch (error as? PostgrestError)?.message {
+        case "objectionable_content":
+            "Your post includes language that isn't allowed on Between Us. Please reword it and try again."
+        case "account_banned":
+            "Your account can no longer post. Contact hello@betweenussupport.com if you think this is a mistake."
+        default:
+            "Your message is still in the box. Check your connection and try again."
+        }
+    }
+
     func edit(_ post: Post, to content: String) async throws {
         let editedAt = Date()
         try await supabase.from("posts")
@@ -460,6 +474,9 @@ final class CircleStore {
             .select("id")
             .single()
             .execute().value
+        // Gone from the reporter's feed now, and on every later load too:
+        // the posts policy hides posts the viewer has reported (0031).
+        removePost(post.id)
         // Emails the team, like the website's notifyReportSubmitted.
         Task { try? await MobileAPI.post("api/mobile/reports", body: ReportIDRequest(reportId: row.id.uuidString.lowercased()), authenticated: true) }
     }

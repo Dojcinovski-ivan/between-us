@@ -117,6 +117,18 @@ struct ProfileView: View {
                 Button("Delete My Account", role: .destructive) { showDelete = true }
             }
 
+            // Apple guideline 1.2: a way to reach the team from inside the app.
+            Section {
+                Link(destination: URL(string: "mailto:hello@betweenussupport.com?subject=Reporting%20a%20problem")!) {
+                    Label("Report a problem or contact us", systemImage: "envelope")
+                }
+            } header: {
+                Text("Safety and support")
+            } footer: {
+                Text("Email hello@betweenussupport.com about anything that worries you. We read every message and act on reports within 24 hours. To report a single post, long-press it and choose Report.")
+            }
+            .foregroundStyle(Theme.link)
+
             Section {
                 Link("Privacy Policy", destination: URL(string: "https://betweenussupport.com/privacy")!)
                 Link("Terms of Service", destination: URL(string: "https://betweenussupport.com/terms")!)

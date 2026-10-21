@@ -78,7 +78,7 @@ private struct PostActionsModifier: ViewModifier {
                     }
                 }
             } message: { _ in
-                Text("Reports are private. The team reviews every one.")
+                Text("Reports are private. The post disappears from your feed now, and the team reviews every report within 24 hours.")
             }
             .alert(
                 "Thanks, we'll take a look.",
@@ -152,7 +152,7 @@ private struct EditPostSheet: View {
 
     @State private var text: String
     @State private var isSaving = false
-    @State private var failed = false
+    @State private var failure: String?
     @FocusState private var focused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -172,8 +172,8 @@ private struct EditPostSheet: View {
                         .lineLimit(4...)
                         .focused($focused)
                 } footer: {
-                    if failed {
-                        Text("That didn't save. Please try again.").foregroundStyle(Theme.danger)
+                    if let failure {
+                        Text(failure).foregroundStyle(Theme.danger)
                     }
                 }
             }
@@ -201,13 +201,13 @@ private struct EditPostSheet: View {
 
     private func save() {
         isSaving = true
-        failed = false
+        failure = nil
         Task {
             do {
                 try await onSave(trimmed)
                 dismiss()
             } catch {
-                failed = true
+                failure = CircleStore.postFailureMessage(for: error)
             }
             isSaving = false
         }

@@ -10,6 +10,7 @@ struct CircleView: View {
     @State private var postAction: PostAction?
     @State private var threadPath: [UUID] = []
     @State private var postFailed = false
+    @State private var postFailureMessage = ""
     @FocusState private var composerFocused: Bool
     @Environment(SessionStore.self) private var session
     @Environment(\.scenePhase) private var scenePhase
@@ -92,6 +93,7 @@ struct CircleView: View {
                         withAnimation { proxy.scrollTo(post.id, anchor: .bottom) }
                         return true
                     } catch {
+                        postFailureMessage = CircleStore.postFailureMessage(for: error)
                         postFailed = true
                         return false
                     }
@@ -101,7 +103,7 @@ struct CircleView: View {
             .alert("That didn't post", isPresented: $postFailed) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Your message is still in the box. Check your connection and try again.")
+                Text(postFailureMessage)
             }
         }
     }

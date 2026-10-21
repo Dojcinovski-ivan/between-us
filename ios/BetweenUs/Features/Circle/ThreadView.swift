@@ -9,6 +9,7 @@ struct ThreadView: View {
     @State private var draft = ""
     @State private var postAction: PostAction?
     @State private var postFailed = false
+    @State private var postFailureMessage = ""
     @FocusState private var composerFocused: Bool
     @Environment(\.dismiss) private var dismiss
 
@@ -65,6 +66,7 @@ struct ThreadView: View {
                         withAnimation { proxy.scrollTo(reply.id, anchor: .bottom) }
                         return true
                     } catch {
+                        postFailureMessage = CircleStore.postFailureMessage(for: error)
                         postFailed = true
                         return false
                     }
@@ -74,7 +76,7 @@ struct ThreadView: View {
             .alert("That didn't post", isPresented: $postFailed) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Your reply is still in the box. Check your connection and try again.")
+                Text(postFailureMessage)
             }
         }
     }

@@ -5,6 +5,7 @@ export type PendingReport = {
   reporter: { username: string } | null;
   post: {
     id: string;
+    user_id: string;
     content: string;
     users: { username: string } | null;
   } | null;

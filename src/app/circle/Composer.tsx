@@ -176,7 +176,15 @@ export function Composer({
     setIsSubmitting(false);
 
     if (insertError || !data) {
-      setError("Something went wrong posting that. Please try again.");
+      // The database refuses blocked words and banned members by name
+      // (0031_moderation), so those get their own message.
+      setError(
+        insertError?.message === "objectionable_content"
+          ? "Your post includes language that isn't allowed on Between Us. Please reword it and try again."
+          : insertError?.message === "account_banned"
+            ? "Your account can no longer post. Contact hello@betweenussupport.com if you think this is a mistake."
+            : "Something went wrong posting that. Please try again.",
+      );
       // Record the failure (metadata only — never the post content) so a
       // pattern of failed sends shows up in the admin health view.
       logClientError("post_create", insertError?.message ?? "insert returned no data", {

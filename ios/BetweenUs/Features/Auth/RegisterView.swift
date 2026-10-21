@@ -16,6 +16,7 @@ struct RegisterView: View {
     @State private var dateOfBirth = Date()
     @State private var dateOfBirthSet = false
     @State private var marketingConsent = false
+    @State private var agreedToTerms = false
 
     @State private var isSubmitting = false
     @State private var problem: Problem?
@@ -85,6 +86,15 @@ struct RegisterView: View {
                 Text("Between Us is for adults. We check your age and then discard the date, so your birthday is never stored.")
             }
 
+            // Apple guideline 1.2: agreeing to the terms has to be a choice the
+            // member makes, not a footnote under the button.
+            Section {
+                Toggle("I agree to the Terms of Service", isOn: $agreedToTerms)
+            } footer: {
+                Text("There is zero tolerance for objectionable content or abusive members. Reported posts are reviewed within 24 hours, and anyone who posts abuse is removed for good. Read the [Terms of Service](https://betweenussupport.com/terms) and our [Privacy Policy](https://betweenussupport.com/privacy).")
+                    .tint(Theme.link)
+            }
+
             Section {
                 Toggle("Email me circle updates and news (optional)", isOn: $marketingConsent)
             } footer: {
@@ -110,9 +120,6 @@ struct RegisterView: View {
                     }
                 }
                 .disabled(isSubmitting)
-            } footer: {
-                Text("By creating an account you agree to our [Terms of Service](https://betweenussupport.com/terms). Our [Privacy Policy](https://betweenussupport.com/privacy) explains what we collect and why.")
-                    .tint(Theme.link)
             }
 
             Section {
@@ -154,6 +161,7 @@ struct RegisterView: View {
         guard address.contains("@") else { return fail(.message("Please enter your email address.")) }
         guard password.count >= 8 else { return fail(.message("Your password needs to be at least 8 characters.")) }
         guard password == confirmPassword else { return fail(.message("Those passwords don't match.")) }
+        guard agreedToTerms else { return fail(.message("Please agree to the Terms of Service to continue.")) }
 
         problem = nil
         isSubmitting = true

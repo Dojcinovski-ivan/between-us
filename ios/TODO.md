@@ -19,6 +19,16 @@
 - [ ] Run `supabase/migrations/0030_user_blocks.sql`. Until then Block in the
       app fails with an error (the table doesn't exist yet).
 
+## App Store guideline 1.2 resubmission (build 2)
+
+- [ ] Run `supabase/migrations/0031_moderation.sql`. Until then the word
+      filter and ban checks don't exist, and Ban Member in the admin panel
+      fails (no is_banned column).
+- [ ] App Store Connect: set the age rating to 18+.
+- [ ] Reply to App Review: report and block on every post, posts filtered
+      for blocked words, reported posts leave the reporter's feed, reports
+      reviewed within 24 hours with Ban Member, contact row in Profile.
+
 ## Later
 
 - [ ] Google sign-in. If added, **Sign in with Apple must be added too** (App Store rule 4.8).

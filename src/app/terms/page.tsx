@@ -18,7 +18,7 @@ export default function TermsPage() {
         <h1 className="text-balance font-display text-[clamp(2rem,4vw,2.75rem)] font-medium text-ink">
           Terms of Service
         </h1>
-        <p className="mt-3 text-sm text-faint">Last updated August 2026</p>
+        <p className="mt-3 text-sm text-faint">Last updated October 2026</p>
 
         <Paragraph>
           These terms are written in plain language on purpose. Think of
@@ -51,6 +51,26 @@ export default function TermsPage() {
           <li>Never share what someone else posted here outside of Between Us</li>
         </ul>
 
+        <Heading>Zero tolerance for abuse</Heading>
+        <Paragraph>
+          There is no tolerance on Between Us for objectionable content or
+          abusive members. That includes hate speech, slurs, threats,
+          harassment, sexual content, encouraging anyone to harm
+          themselves, and anything that targets another member. Posts
+          containing blocked words are refused automatically.
+        </Paragraph>
+        <Paragraph>
+          Every post has a Report option, and every member can be blocked,
+          which hides everything they write from you straight away. We
+          review every report within 24 hours. When content breaks these
+          terms we remove it and permanently ban the member who posted it.
+          You can also tell us about anything that worries you at{" "}
+          <a href="mailto:hello@betweenussupport.com" className="text-ink underline underline-offset-4">
+            hello@betweenussupport.com
+          </a>
+          .
+        </Paragraph>
+
         <Heading>What we are not responsible for</Heading>
         <Paragraph>
           We are not responsible for the content that other members post,
@@ -62,8 +82,9 @@ export default function TermsPage() {
 
         <Heading>Account termination</Heading>
         <Paragraph>
-          We can remove any account that does not follow our community
-          guidelines, to keep Between Us a safe place for everyone.
+          We can remove any account that does not follow these terms or
+          our community guidelines, to keep Between Us a safe place for
+          everyone. Members banned for abuse are not allowed back.
         </Paragraph>
 
         <Heading>No warranties</Heading>

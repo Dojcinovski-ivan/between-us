@@ -53,7 +53,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     supabase
       .from("reports")
-      .select("id, reason, created_at, reporter:users(username), post:posts(id, content, users(username))")
+      .select("id, reason, created_at, reporter:users(username), post:posts(id, user_id, content, users(username))")
       .eq("status", "pending")
       .order("created_at", { ascending: true }),
     supabase
