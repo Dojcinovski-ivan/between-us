@@ -21,11 +21,11 @@
 
 ## App Store guideline 1.2 resubmission (build 2)
 
-- [ ] Run `supabase/migrations/0031_moderation.sql`. Until then the word
+- [x] Run `supabase/migrations/0031_moderation.sql` (done 2026-10-21). Until then the word
       filter and ban checks don't exist, and Ban Member in the admin panel
       fails (no is_banned column).
-- [ ] App Store Connect: set the age rating to 18+.
-- [ ] Reply to App Review: report and block on every post, posts filtered
+- [x] App Store Connect: age rating 18+ (was already set).
+- [x] Review notes updated: report and block on every post, posts filtered
       for blocked words, reported posts leave the reporter's feed, reports
       reviewed within 24 hours with Ban Member, contact row in Profile.
 
