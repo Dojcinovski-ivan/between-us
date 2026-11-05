@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// One post as a chat bubble: yours on the right in the accent colour,
-/// everyone else's on the left. Long press for reactions and actions.
+/// everyone else's on the left. Long press, or the ⋯ button, for reactions
+/// and actions.
 struct PostRow: View {
     let post: Post
     let store: CircleStore
@@ -53,6 +54,16 @@ struct PostRow: View {
                     .background(Theme.sage.opacity(0.18), in: Capsule())
                     .foregroundStyle(Theme.ink)
             }
+            // The same menu as the long press, as a visible button. App
+            // Review didn't find Report and Block behind the long press.
+            Menu { menu } label: {
+                Image(systemName: "ellipsis")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 32, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(isMine ? "Post options" : "Report, block and more")
         }
         .padding(.horizontal, 4)
     }

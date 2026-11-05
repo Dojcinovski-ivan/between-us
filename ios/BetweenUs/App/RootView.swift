@@ -4,6 +4,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(SessionStore.self) private var session
     @State private var showSplash = true
+    @State private var agreedThisSession: Set<UUID> = []
 
     var body: some View {
         @Bindable var session = session
@@ -46,8 +47,12 @@ struct RootView: View {
             case .noCircle:
                 NoCircleView()
             case .signedIn(let profile):
-                CircleView(profile: profile)
-                    .id(profile.id)
+                if Demo.isOn || agreedThisSession.contains(profile.id) || TermsGateView.hasAgreed(profile.id) {
+                    CircleView(profile: profile)
+                        .id(profile.id)
+                } else {
+                    TermsGateView(userId: profile.id) { agreedThisSession.insert(profile.id) }
+                }
             case .failed:
                 ConnectionErrorView()
             }

@@ -134,6 +134,7 @@ private extension SignedInFlowTests {
         while Date() < deadline, !app.profileButton.exists {
             if notNow.exists { notNow.tap() }
             if app.buttons["Not Now"].exists { app.buttons["Not Now"].tap() }
+            if app.agreeToTermsButton.exists { app.agreeToTermsButton.tap() }
             if error.exists { XCTFail("Log in was refused. \(error.label)") }
             _ = app.profileButton.waitForExistence(timeout: 1)
         }

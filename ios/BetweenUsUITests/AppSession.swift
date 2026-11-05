@@ -11,6 +11,10 @@ extension XCUIApplication {
     /// those screens carry their own Log Out.
     var logOutButton: XCUIElement { buttons["Log Out"] }
 
+    /// The one-time terms screen (TermsGateView) that comes before the circle.
+    var agreeToTermsButton: XCUIElement { buttons["I Agree to the Terms"] }
+
+    /// The terms screen counts too: it has its own Log Out.
     private var isOnFirstScreen: Bool {
         welcomeLogInButton.exists || profileButton.exists || logOutButton.exists
     }

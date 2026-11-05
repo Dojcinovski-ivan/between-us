@@ -131,18 +131,12 @@ struct CircleView: View {
     private var weeks: some View {
         let groups = WeekGroup.group(store.topLevelPosts)
 
+        // In a quiet week the latest past week opens on its own, so the feed
+        // never looks empty while there are posts to read (or report).
+        let openWeek = groups.thisWeek.isEmpty ? groups.previous.last?.id : nil
+
         ForEach(groups.previous) { week in
-            DisclosureGroup {
-                VStack(spacing: 20) {
-                    ForEach(week.posts) { post in row(post) }
-                }
-                .padding(.top, 12)
-            } label: {
-                Text("\(week.label) · \(week.posts.count) \(week.posts.count == 1 ? "post" : "posts")")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Theme.muted)
-            }
-            .tint(Theme.muted)
+            PastWeek(week: week, startsExpanded: week.id == openWeek) { post in row(post) }
         }
 
         Text("This Week")
@@ -239,6 +233,33 @@ private struct InfoCard: View {
         .padding()
         .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A past week's posts behind a disclosure.
+private struct PastWeek<Row: View>: View {
+    let week: WeekGroup
+    @ViewBuilder var row: (Post) -> Row
+    @State private var expanded: Bool
+
+    init(week: WeekGroup, startsExpanded: Bool, @ViewBuilder row: @escaping (Post) -> Row) {
+        self.week = week
+        self.row = row
+        _expanded = State(initialValue: startsExpanded)
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $expanded) {
+            VStack(spacing: 20) {
+                ForEach(week.posts) { post in row(post) }
+            }
+            .padding(.top, 12)
+        } label: {
+            Text("\(week.label) · \(week.posts.count) \(week.posts.count == 1 ? "post" : "posts")")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Theme.muted)
+        }
+        .tint(Theme.muted)
     }
 }
 
