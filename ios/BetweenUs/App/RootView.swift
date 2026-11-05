@@ -31,6 +31,15 @@ struct RootView: View {
         }
     }
 
+    /// The screenshot demo (Debug only) skips the terms screen.
+    private var isDemo: Bool {
+        #if DEBUG
+        Demo.isOn
+        #else
+        false
+        #endif
+    }
+
     private var screen: some View {
         Group {
             switch session.state {
@@ -47,7 +56,7 @@ struct RootView: View {
             case .noCircle:
                 NoCircleView()
             case .signedIn(let profile):
-                if Demo.isOn || agreedThisSession.contains(profile.id) || TermsGateView.hasAgreed(profile.id) {
+                if isDemo || agreedThisSession.contains(profile.id) || TermsGateView.hasAgreed(profile.id) {
                     CircleView(profile: profile)
                         .id(profile.id)
                 } else {
